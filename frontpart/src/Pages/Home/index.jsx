@@ -4,6 +4,13 @@ import HomeCatSlider from "../../components/CatSlider";
 import { FaShippingFast } from "react-icons/fa";
 import { MdOutlinePayment, MdOutlineVerified } from "react-icons/md";
 import { BsClockFill } from "react-icons/bs";
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Box from '@mui/material/Box';
+import ProductSlider from "../../components/ProductSlider";
+import NewArrival from "../../components/NewArrival/NewArrival";
+
+import HomeSlider2 from "../../components/HomeSlider2/HomeSlider2";
 
 function Home() {
   const calculateTimeLeft = () => {
@@ -32,10 +39,18 @@ function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  return (
-    <>
+{/**Use ScrollBar */}
+const [value, setValue] = useState(0);
+
+const handleChange = (event, newValue) => {
+  setValue(newValue);
+};
+
+return (
+  <>
       <HomeSlider />
-      <section className="py-2 bg-gray-100 flex justify-center items-center">
+  {/* Offer Countdown Section */}
+      <section className="py-2 bg-white flex justify-center items-center">
         <div className="container text-center p-4 bg-white shadow-lg rounded-lg border text-[#FF3D3D]">
           <h2 className="text-2xl font-bold text-gray-800 mb-3">Limited Time Offer! 🔥</h2>
           <p className="text-gray-600 text-lg">Hurry up! Offer ends in:</p>
@@ -61,10 +76,25 @@ function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-5 bg-gray-100 flex justify-center items-center">
+      <section className="p-2 pb-12 bg-white flex flex-col md:flex-row items-center gap-4">
+      <div className="container grid grid-cols-1 md:grid-cols-4 gap-3 p-4 md:h-[500px]">
+        {/* Left part with slider covering 3/4 in medium+ screens */}
+        <div className="md:col-span-3 flex justify-center items-center p-4 w-full h-full">
+          <HomeSlider2 />
+        </div>
+        {/* Right part with images in 2x2 grid covering 1/4 */}
+        <div className="grid grid-cols-2 grid-rows-2 gap-6 w-full h-full md:h-[500px]">
+          <img src="https://cmsimages.shoppersstop.com/Deals_Card_Web_LATIN_QUARTER_4726b82b55/Deals_Card_Web_LATIN_QUARTER_4726b82b55.png" />
+          <img src="https://cmsimages.shoppersstop.com/Deals_Card_Web_Juniper_25236c986f/Deals_Card_Web_Juniper_25236c986f.png" className="w-[300px] h-full object-cover rounded-lg shadow-lg" />
+          <img src="https://cmsimages.shoppersstop.com/Deals_Card_Web_VAN_HEUSEN_7ba04a3e5c/Deals_Card_Web_VAN_HEUSEN_7ba04a3e5c.png" className="w-[300px] h-full object-cover rounded-lg shadow-lg" />
+          <img src="https://cmsimages.shoppersstop.com/Deals_Card_Web_ALLEN_SOLLY_8bbba4c471/Deals_Card_Web_ALLEN_SOLLY_8bbba4c471.png" className="w-[300px] h-full object-cover rounded-lg shadow-lg" />
+        </div>
+      </div>
+    </section>
+
+      <section className="py-5 bg-white flex justify-center items-center">
         <div className="container flex flex-wrap md:flex-nowrap justify-between items-center px-10 gap-5">
-          <div className="flex items-center gap-3 w-full md:w-1/3 p-4 border border-red-500 rounded-lg shadow-md">
+          <div className="flex items-center gap-3 w-full md:w-1/3 p-4 border border-red-500 rounded-lg shadow-md bg-white">
             <FaShippingFast className="text-3xl text-red-500" />
             <div>
               <h3 className="text-lg font-semibold">Free Shipping</h3>
@@ -72,7 +102,7 @@ function Home() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-1/3 p-4 border border-green-500 rounded-lg shadow-md">
+          <div className="flex items-center gap-3 w-full md:w-1/3 p-4 border border-green-500 rounded-lg shadow-md bg-white">
             <MdOutlineVerified className="text-3xl text-green-500" />
             <div>
               <h3 className="text-lg font-semibold">100% Genuine Products</h3>
@@ -80,7 +110,7 @@ function Home() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-1/3 p-4 border border-blue-500 rounded-lg shadow-md">
+          <div className="flex items-center gap-3 w-full md:w-1/3 p-4 border border-blue-500 rounded-lg shadow-md bg-white">
             <MdOutlinePayment className="text-3xl text-blue-500" />
             <div>
               <h3 className="text-lg font-semibold">Secure Payments</h3>
@@ -93,7 +123,70 @@ function Home() {
 
       <HomeCatSlider />
 
-      {/* Offer Countdown Section */}
+      <section className="py-12 bg-whiteN gap-4">
+      <div className="container mx-auto px-6 bg-white py-10 ">
+        <div className="flex flex-col md:flex-row items-center justify-between bg-white shadow-lg rounded-2xl p-8">
+          {/* Left Section */}
+          <div className="mb-6 md:mb-0">
+            <h3 className="text-2xl font-bold text-gray-800">Popular Products</h3>
+            <p className="text-gray-500">Don't miss the chance to grab the latest deals.</p>
+          </div>
+
+          {/* Right Section - Tab Menu */}
+          <div className="w-full md:w-auto">
+            <Box sx={{ maxWidth: { xs: 320, sm: 480 }, bgcolor: "background.paper" }}>
+              <Tabs
+                value={value}
+                onChange={handleChange}
+                variant="scrollable"
+                scrollButtons="auto"
+                aria-label="scrollable auto tabs example"
+                sx={{
+                  "& .MuiTabs-indicator": {
+                    backgroundColor: "#FF3D3D", // Underline color
+                  },
+                }}
+              >
+                {[
+                  "Home & Kitchen",
+                  "Beauty & Personal Care",
+                  "Sports & Fitness",
+                  "Books & Stationary",
+                  "Toys & Baby Care",
+                  "Automobiles",
+                  "More Items",
+                ].map((label, index) => (
+                  <Tab
+                    key={index}
+                    label={label}
+                    sx={{
+                      color: value === index ? "#FF3D3D" : "#4B5563", // Red when selected, gray otherwise
+                      fontWeight: value === index ? "bold" : "normal",
+                      transition: "color 0.3s ease",
+                      "&.Mui-selected": {
+                        color: "#FF3D3D", // Ensures text stays red when selected
+                      },
+                    }}
+                  />
+                ))}
+              </Tabs>
+            </Box>
+          </div>
+          
+       
+        </div>
+           <ProductSlider items={5}/>
+      </div>
+       
+    </section>
+
+
+    <section className="bg-white flex items-center justify-center">
+  <NewArrival />
+</section>
+
+
+      
     </>
   );
 }

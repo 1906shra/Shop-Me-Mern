@@ -14,6 +14,7 @@ export default function App() {
           nextEl: ".custom-prev",
           prevEl: ".custom-next",
         }}
+       
         pagination={{ clickable: true }}
         autoplay={{ delay: 2500, disableOnInteraction: false }}
         loop={true}
