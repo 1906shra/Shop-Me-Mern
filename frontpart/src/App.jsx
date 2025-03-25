@@ -6,36 +6,54 @@ import Home from './Pages/Home';
 import Footer from './components/Footer';
 import ProductListing from './Pages/ProductListing';
 import ProductDetail from './Pages/ProductDetails';
-import Login from './Pages/Login'; // Corrected import
-
-import Button from '@mui/material/Button';
+import ForgotPassword from './Pages/ForgotPassword';
+import Login from './Pages/Login';
 import SignUp from './Pages/SignUp';
+import Cart from './Pages/Cart';
+import Verify from './Pages/Verify';
+import Checkout from './Pages/Checkout';
 
-// Create the context
-const MyContext = createContext();
+import toast, { Toaster } from 'react-hot-toast';
+import MyAccount from './Pages/MyAccount';
+import WishList from './Pages/WishList';
+import Order from './Pages/Order';
+
+
+export const AuthContext = createContext();
 
 function App() {
-  const values = {}; // Define any values you want to share in context
+  const [isLogin, setIsLogin] = useState(true); // ✅ Consistent state name
 
-  // Handle Button Click (If needed)
   
+  const alertBox = (status, msg) => {
+    if (status === 'success') toast.success(msg);
+    if (status === 'error') toast.error(msg);
+  };
+
+  // ✅ Context Values
+  const authValues = { alertBox, isLogin, setIsLogin };
+
   return (
     <BrowserRouter>
-      <MyContext.Provider value={values}>
+      <AuthContext.Provider value={authValues}>
         <Header />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/ProductListing" element={<ProductListing />} />
           <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/Login" element={<Login />} /> 
-          <Route path="/SignUp" element={<SignUp/>} /> 
+          <Route path="/Login" element={<Login />} />
+          <Route path="/SignUp" element={<SignUp />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/Verify" element={<Verify />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/Checkout" element={<Checkout />} />
+          <Route path="/MyAccount" element={<MyAccount/>} />
+          <Route path="/WishList" element={<WishList/>} />
+          <Route path="/Order" element={<Order/>} />
         </Routes>
-        <section className="bg-white">
-          <Footer />
-        </section>
-      </MyContext.Provider>
-
-      
+        <Footer />
+        <Toaster />
+      </AuthContext.Provider>
     </BrowserRouter>
   );
 }

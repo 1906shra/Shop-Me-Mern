@@ -51,7 +51,7 @@ function Navigation() {
             alt="fashion" 
             className='w-6 h-6 object-cover rounded-md' 
         />
-        <span className="font-semibold text-gray-700 group-hover:text-[rgb(255,61,61)]">Fashion</span>
+        <span className="font-semibold text-gray-700 group-hover:text-[#FF3D3D]">Fashion</span>
     </Link>
 
     {/* First-Level Dropdown */}
