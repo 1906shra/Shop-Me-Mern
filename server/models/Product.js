@@ -16,25 +16,47 @@ const productSchema = new mongoose.Schema(
             required: true,
         },
         category: {
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Category",
             required: true,
+        },
+        subCategory: {
+            type: String,
+        },
+        productSize: [{
+            type: String,
+        }],
+        productWeight: [{
+            type: String,
+        }],
+        discount: {
+            type: Number,
+            default: 0,
+        },
+        ratings: {
+            type: Number,
+            default: 0,
+            min: 0,
+            max: 5,
         },
         stock: {
             type: Number,
             required: true,
             default: 0,
         },
-        images: [
-            {
-                type: String, // Stores image URLs
-                required: true,
-            },
-        ],
-        createdAt: {
-            type: Date,
-            default: Date.now,
+        images: [{
+            type: String,
+            required: true,
+        }],
+        location: {
+            value: { type: String },
+            label: { type: String }
         },
-        updatedAt: {
+        brand: {
+            type: String,
+            default: "Generic"
+        },
+        dateCreated: {
             type: Date,
             default: Date.now,
         },
@@ -42,6 +64,9 @@ const productSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-const Product = mongoose.model("Product", productSchema);
+productSchema.virtual("id").get(function () {
+    return this._id.toHexString();
+});
 
+const Product = mongoose.model("Product", productSchema);
 export default Product;

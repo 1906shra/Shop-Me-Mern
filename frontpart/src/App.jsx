@@ -10,13 +10,16 @@ import ForgotPassword from './Pages/ForgotPassword';
 import Login from './Pages/Login';
 import SignUp from './Pages/SignUp';
 import Cart from './Pages/Cart';
-import Verify from './Pages/Verify';
+import Verify from './Pages/verify/index';
 import Checkout from './Pages/Checkout';
 
 import toast, { Toaster } from 'react-hot-toast';
 import MyAccount from './Pages/MyAccount';
 import WishList from './Pages/WishList';
 import Order from './Pages/Order';
+import VerifyEmail from './Pages/verify1';
+import SendVerificationEmail from './Pages/sendverify';
+//const apiUrl = process.env.REACT_APP_API_URL
 
 
 export const AuthContext = createContext();
@@ -45,6 +48,8 @@ function App() {
           <Route path="/SignUp" element={<SignUp />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/Verify" element={<Verify />} />
+          <Route path="/verify/:token" element={<VerifyEmail/>} />
+          <Route path="/send-verification" element={<SendVerificationEmail/>} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/Checkout" element={<Checkout />} />
           <Route path="/MyAccount" element={<MyAccount/>} />

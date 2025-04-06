@@ -8,13 +8,21 @@ import helmet from 'helmet';
 import connectDB from './config/db.js';
 import './config/cloudinary.js'; // Ensure cloudinary is configured
 import userRouter from './routes/authRouter.js';
+import categoryRouter from './routes/CategoryRoute.js';
+import productRouter from './routes/productRoute.js';
+import cartRouter from './routes/cartRoute.js';
+import ListSchema from './routes/MyListRoute.js';
+
 
 dotenv.config();
 
 const app = express();
 
 // Middlewares
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // This is important for form-data
 app.use(cookieParser());
@@ -27,6 +35,10 @@ app.use(morgan('dev'));
 
 // Routes
 app.use('/api/user', userRouter);
+app.use('/api/categories', categoryRouter);
+app.use('/api/products', productRouter);
+app.use('/api/cart', cartRouter);
+app.use('/api/List', ListSchema);
 
 // Test Route
 app.get('/', (req, res) => {

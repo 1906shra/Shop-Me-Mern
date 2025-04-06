@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
-function OtpBox() {
-  const [otp, setOtp] = useState(new Array(6).fill(""));
+function OtpBox({ length = 6, onChange }) {
+  const [otp, setOtp] = useState(new Array(length).fill(""));
   const inputRefs = useRef([]);
 
   const handleChange = (index, event) => {
@@ -10,8 +10,8 @@ function OtpBox() {
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
-      
-      if (value && index < 5) {
+
+      if (value && index < length - 1) {
         inputRefs.current[index + 1].focus();
       }
     }
@@ -22,6 +22,10 @@ function OtpBox() {
       inputRefs.current[index - 1].focus();
     }
   };
+
+  useEffect(() => {
+    onChange(otp.join("")); // Send full OTP string to parent
+  }, [otp, onChange]);
 
   return (
     <div className="flex gap-2 justify-center">
@@ -34,7 +38,7 @@ function OtpBox() {
           onChange={(event) => handleChange(index, event)}
           onKeyDown={(event) => handleKeyDown(index, event)}
           maxLength={1}
-          className="w-10 h-10 text-center text-lg border-2 border-gray-300 rounded focus:outline-none focus:border-blue-500"
+          className="w-10 h-10 text-center text-lg border-2 border-gray-300 rounded focus:outline-none focus:border-pink-500"
         />
       ))}
     </div>

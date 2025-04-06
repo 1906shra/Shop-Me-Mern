@@ -1,88 +1,64 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { postData } from "../../utils/api";
 
 function ForgotPassword() {
+  const { state } = useLocation();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const navigate = useNavigate();
 
-  // Handle Password Reset
-  const handlePasswordReset = (e) => {
+  // On mount, extract email from location or fallback (e.g., localStorage)
+  useEffect(() => {
+    if (state?.email) {
+      setEmail(state.email);
+    } else {
+      const storedEmail = localStorage.getItem("resetEmail");
+      if (storedEmail) {
+        setEmail(storedEmail);
+      } else {
+        alert("Email not found. Redirecting to login.");
+        navigate("/login");
+      }
+    }
+  }, [state, navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!email) {
-      alert("Please enter your email.");
-      return;
+    try {
+      const res = await postData("/user/reset-password", { email, newPassword });
+      if (res.message === "Password reset successful") {
+        alert("Password reset successfully! Please log in.");
+        localStorage.removeItem("resetEmail"); // cleanup
+        navigate("/login");
+      } else {
+        alert(res.message || "Password reset failed.");
+      }
+    } catch (err) {
+      console.error("Reset error:", err);
+      alert("Something went wrong. Try again.");
     }
-    if (!newPassword || !confirmPassword) {
-      alert("Please enter a new password.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-
-    alert("Password reset successfully! Please log in.");
-    navigate("/login");
   };
 
   return (
-    <section className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg space-y-6">
-        <h2 className="text-3xl font-bold text-center text-gray-800">
+    <section className="flex items-center justify-center min-h-screen bg-gray-100">
+      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
+        <h2 className="text-2xl font-semibold text-center mb-6">Reset Your Password</h2>
+        <input
+          type="password"
+          placeholder="Enter new password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          required
+          className="w-full px-4 py-2 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+        />
+        <button
+          type="submit"
+          className="w-full bg-pink-500 text-white py-2 rounded-lg hover:bg-pink-600 transition"
+        >
           Reset Password
-        </h2>
-        <p className="text-center text-gray-600">
-          Enter your email and set a new password
-        </p>
-
-        <form onSubmit={handlePasswordReset} className="space-y-4">
-          <div>
-            <label className="block text-gray-700 font-medium">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 shadow-sm"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium">New Password</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 shadow-sm"
-              placeholder="Enter new password"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium">Confirm Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 shadow-sm"
-              placeholder="Confirm new password"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-red-400 text-white py-3 rounded-lg hover:bg-red-500 transition duration-200 font-medium shadow-md"
-          >
-            Reset Password
-          </button>
-        </form>
-      </div>
+        </button>
+      </form>
     </section>
   );
 }
