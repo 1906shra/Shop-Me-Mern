@@ -60,27 +60,43 @@ function DashBoard() {
   const categories = ['All', 'Electronics', 'Computers', 'Accessories', 'Wearables'];
   return (
     <>
-      <div className="w-510px p-5 border border-gray-700 flex items-center justify-center mb-5 ml-[300px] mr-4">
-        <div className="info">
-          <h1>
-            Hi Good Morning,<br />
-            User
-          </h1>
-          <img
-            src="https://cdn-icons-gif.flaticon.com/11321/11321431.gif"
-            alt=""
-            className="w-[10%]"
-          />
-          <p>Here's What Happening on your store today. See the total sale</p>
-          <br />
-          <Button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:from-blue-600 hover:to-purple-600 transform transition-all duration-300 hover:scale-105 hover:text-gray-200">
-  Add Product
-</Button>
-
-        </div>
-
-        <img src="https://cdn-icons-gif.flaticon.com/17905/17905666.gif" alt="" className="w-[20%] h-auto ml-auto" />
+<div className="w-510px p-5 border border-gray-700 flex items-center justify-center mb-5 ml-[300px] mr-4">
+  <div className="info w-full flex items-center justify-between">
+    {/* Left Side Content */}
+    <div className="flex flex-col space-y-5 max-w-[65%]">
+      <div className="flex items-center space-x-3">
+        <h1 className="text-3xl font-extrabold text-gray-800 dark:text-white leading-snug">
+          Hi, Good Morning<br />
+          <span className="text-blue-600 dark:text-blue-400">👋 User</span>
+        </h1>
+        <img
+          src="https://cdn-icons-gif.flaticon.com/11321/11321431.gif"
+          alt="wave"
+          className="w-14 h-14 animate-bounce"
+        />
       </div>
+
+      <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+        Here's what's happening on your store today. Stay updated with your total sales!
+      </p>
+
+      <Button className="w-fit text-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold px-6 py-3 rounded-md shadow-md hover:from-blue-600 hover:to-purple-600 transition duration-300 transform hover:scale-105 hover:text-gray-100">
+        + Add Product
+      </Button>
+    </div>
+
+    {/* Right Side GIF */}
+    <img
+      src="https://cdn-icons-gif.flaticon.com/17905/17905666.gif"
+      alt="Analytics"
+      className="w-[200px] h-[200px] ml-4"
+    />
+  </div>
+</div>
+
+
+
+
 
       <div className=" ml-[300px] mr-4">
       <DashCom />

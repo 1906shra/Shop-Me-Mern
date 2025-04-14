@@ -1,17 +1,33 @@
 import express from "express";
-import { createCategory, uploadImage, getCategories,deleteCategory } from "../controllers/categoryController.js";
-import upload from "../middleware/multer.js"; // Import Multer middleware
+import {
+  createCategory,
+  uploadImage,
+  getCategories,
+  getCategoryById,
+  updateCategory,
+  deleteCategory,
+} from "../controllers/categoryController.js";
+
+import upload from "../middleware/multer.js"; // Multer middleware for image upload
 
 const router = express.Router();
 
-// Create a category (only JSON data, not images)
+// Create a new category
 router.post("/createCategory", createCategory);
 
-// Upload category image separately
-router.post("/:id/upload", upload.single("image"), uploadImage);
+// Upload image to a category
+router.post("/uploadImage/:id", upload.single("image"), uploadImage);
 
 // Get all categories
 router.get("/getCategory", getCategories);
-router.delete("/:id", deleteCategory);
+
+// Get single category by ID
+router.get("/getCategory/:id", getCategoryById);
+
+// Update a category
+router.put("/updateCategory/:id", updateCategory);
+
+// Delete a category
+router.delete("/deleteCategory/:id", deleteCategory);
 
 export default router;

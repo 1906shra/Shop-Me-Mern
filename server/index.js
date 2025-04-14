@@ -12,6 +12,7 @@ import categoryRouter from './routes/CategoryRoute.js';
 import productRouter from './routes/productRoute.js';
 import cartRouter from './routes/cartRoute.js';
 import ListSchema from './routes/MyListRoute.js';
+import adminRouter from './routes/adminRoute.js'; // Import admin router
 
 
 dotenv.config();
@@ -39,6 +40,7 @@ app.use('/api/categories', categoryRouter);
 app.use('/api/products', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/List', ListSchema);
+app.use('/api/admin',adminRouter);
 
 // Test Route
 app.get('/', (req, res) => {

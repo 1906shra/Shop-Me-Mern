@@ -1,4 +1,4 @@
-import React, { useState,useContext } from "react";
+import React, { useState, useContext } from "react";
 import IconButton from "@mui/material/IconButton";
 import Badge from "@mui/material/Badge";
 import { styled } from "@mui/material/styles";
@@ -7,8 +7,9 @@ import { MdNotifications } from "react-icons/md";
 import { FiUser, FiSettings, FiLogOut, FiHome, FiUsers } from "react-icons/fi";
 import img from "../../assets/woman.png";
 import img1 from "../../assets/logo.png";
-import  Button  from "@mui/material/Button";
+import Button from "@mui/material/Button";
 import { AuthContext } from "../../App";
+import { useNavigate } from "react-router-dom";
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
   "& .MuiBadge-badge": {
@@ -23,8 +24,37 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
- // Dummy context for example
-  const context = useContext(AuthContext);
+  const { isLogin, setIsLogin } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  const goToMyAccount = () => navigate("/myaccount");
+  const goToLogin = () => navigate("/Login");
+  const goToRegister = () => navigate("/SignUp");
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch("http://localhost:5000/api/admin/logout", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Logout failed");
+      }
+
+      setIsLogin(false);
+    } catch (err) {
+      console.warn("Logout failed on backend:", err.message);
+    } finally {
+      localStorage.removeItem("token");
+      navigate("/");
+    }
+  };
 
   return (
     <header className="w-full h-20 bg-white shadow-md flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50">
@@ -46,7 +76,7 @@ function Header() {
         </IconButton>
 
         {/* Conditional Rendering for Login/Profile */}
-        {context.isLogin === true ? (
+        {isLogin === true ? (
           // Admin Profile
           <div className="relative">
             <img
@@ -63,23 +93,39 @@ function Header() {
                 <button className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
                   <FiUsers className="text-gray-600" /> Manage Users
                 </button>
-                <button className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
+                <button
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  onClick={goToMyAccount}
+                >
                   <FiUser className="text-gray-600" /> Profile
                 </button>
                 <button className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
                   <FiSettings className="text-gray-600" /> Settings
                 </button>
-                <button className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
+                <button
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  onClick={handleLogout}
+                >
                   <FiLogOut className="text-gray-600" /> Logout
                 </button>
               </div>
             )}
           </div>
         ) : (
-          <Button className="!bg-[#FF3D3D] !text-white hover:!bg-white hover:!text-[#FF3D3D] transition-colors duration-300">
-          Login
-        </Button>
-        
+          <div className="flex items-center gap-2">
+            <Button
+              className="!bg-[#FF3D3D] !text-white hover:!bg-white hover:!text-[#FF3D3D] transition-colors duration-300"
+              onClick={goToLogin}
+            >
+              Login
+            </Button>
+            <Button
+              className="!bg-[#FF3D3D] !text-white hover:!bg-white hover:!text-[#FF3D3D] transition-colors duration-300"
+              onClick={goToRegister}
+            >
+              Register
+            </Button>
+          </div>
         )}
       </div>
     </header>

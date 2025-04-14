@@ -11,6 +11,7 @@ import fs from "fs";
 import upload from "../middleware/multer.js";
 
 import crypto from "crypto"; // For OTP generation
+import AddressSchema from "../models/addressModel.js"; // Assuming you have an Address model
 
 
 export const generateToken = (userId) => {
@@ -40,47 +41,43 @@ export const sendVerificationEmail = async (user) => {
 };
 
 export const registerUser = async (req, res) => {
-    try {
-        console.log("Received request body:", req.body);
-        const { fullname, email, password } = req.body;
+  try {
+    console.log("Received request body:", req.body);
+    const { fullname, email, password } = req.body;
 
-        if (!fullname || !email || !password) {
-            return res.status(400).json({ message: "Please fill in all fields" });
-        }
-
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            return res.status(400).json({ message: "User already exists" });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const user = await User.create({
-            fullname,
-            email,
-            password: hashedPassword,
-            verify_email: false
-        });
-
-        console.log("🔥 About to call sendVerificationEmail");
-
-        const token = await sendVerificationEmail(user);
-        
-        console.log("📨 Token returned from sendVerificationEmail:", token);
-        
-
-        return res.status(201).json({
-            message: "User registered successfully. Please verify your email.",
-            // optiontokally expose the token for debugging or testing
-            token
-        });
-       // const token = await sendVerificationEmail(user); 
-    } catch (error) {
-        console.error("Error in registerUser:", error);
-        return res.status(500).json({ message: "Server Error", error: error.message });
+    if (!fullname || !email || !password) {
+      return res.status(400).json({ message: "Please fill in all fields" });
     }
+
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // Just pass the raw password — the schema will hash it
+    const user = await User.create({
+      fullname,
+      email,
+      password,
+      verify_email: false,
+    });
+
+    console.log("🔥 About to call sendVerificationEmail");
+
+    const token = await sendVerificationEmail(user);
+
+    console.log("📨 Token returned from sendVerificationEmail:", token);
+
+    return res.status(201).json({
+      message: "User registered successfully. Please verify your email.",
+      token, // optional for debugging
+    });
+  } catch (error) {
+    console.error("Error in registerUser:", error);
+    return res.status(500).json({ message: "Server Error", error: error.message });
+  }
 };
+
 
 export const verifyEmail = async (req, res) => {
     try {
@@ -268,79 +265,59 @@ export const resendVerificationEmail = async (req, res) => {
     }
 }
 
+export const updateUserDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fullname, email, mobile, gender, address } = req.body;
 
-export async function updateUserDetails(req, res) {
-    try {
-        const userId = req.params.id;
-        console.log("Received User ID:", userId);
+    // Find user
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-        const userExist = await User.findById(userId);
-        if (!userExist) {
-            return res.status(404).json({ message: "User not found" });
-        }
+    let emailUpdated = false;
 
-        const { fullname, email, password, mobile, address, gender } = req.body;
-        console.log("Request Body:", req.body);
+    // Update name, phone, gender
+    if (fullname) user.fullname = fullname;
+    if (mobile) user.mobile = mobile;
+    if (gender) user.gender = gender;
 
-        if (!fullname && !email && !mobile && !password && !address && !gender) {
-            return res.status(400).json({ message: "No fields to update" });
-        }
-
-        const updateFields = {};
-
-        // Fullname
-        if (fullname) updateFields.fullname = fullname;
-
-        // Mobile, address, gender
-        if (mobile) updateFields.mobile = mobile;
-        if (address) updateFields.address = address;
-        if (gender) updateFields.gender = gender;
-
-        // Password update (only if non-empty)
-        if (password && password.trim() !== "") {
-            const salt = await bcrypt.genSalt(10);
-            updateFields.password = await bcrypt.hash(password, salt);
-        }
-
-        // Email update (only if different and valid)
-        if (email && email !== userExist.email) {
-            if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-                return res.status(400).json({ message: "Invalid email format." });
-            }
-
-            const emailExists = await User.findOne({ email });
-            if (emailExists) {
-                return res.status(400).json({ message: "Email already in use." });
-            }
-
-            // Trigger email verification again
-            const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-            updateFields.email = email;
-            updateFields.verify_email = false;
-            updateFields.forgot_password_otp = verifyCode;
-            updateFields.forgot_password_expiry = Date.now() + 10 * 60 * 1000;
-
-            // Send verification email
-            await sendVerificationEmail({ ...userExist.toObject(), email, forgot_password_otp: verifyCode });
-        }
-
-        const updatedUser = await User.findByIdAndUpdate(userId, updateFields, { new: true });
-        if (!updatedUser) {
-            return res.status(400).json({ message: "Failed to update user." });
-        }
-
-        console.log("Updated user:", updatedUser);
-
-        return res.status(200).json(updatedUser);
-
-    } catch (error) {
-        console.error("Error updating user:", error.message);
-        return res.status(500).json({ message: "Server Error", error: error.message });
+    // Update email only if it has changed
+    if (email && email !== user.email) {
+      user.email = email;
+      user.verify_email = false;
+      emailUpdated = true;
     }
-}
 
+    // Handle address (string OR object)
+    if (address) {
+      if (typeof address === "string") {
+        user.address = address; // legacy handling
+      } else if (typeof address === "object") {
+        let userAddress = await AddressSchema.findOne({ user: id });
 
+        if (userAddress) {
+          // Update existing address
+          await AddressSchema.findByIdAndUpdate(userAddress._id, address, { new: true });
+        } else {
+          // Create and link new address
+          const newAddress = await AddressSchema.create({ ...address, user: id });
+          user.address = newAddress._id;
+        }
+      }
+    }
+
+    // Save final user updates
+    await user.save();
+
+    return res.status(200).json({
+      message: emailUpdated ? "Email updated. Please verify your new email." : "Profile updated successfully",
+      verify_email: user.verify_email,
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
 
 
 export async function sendOtpController(req, res) {
@@ -440,11 +417,13 @@ export async function resetPasswordController(req, res) {
   }
 
 
-
   export const getCurrentUser = async (req, res) => {
     try {
-      const { password, ...user } = req.user._doc; // remove sensitive info
-      res.status(200).json(user);
+      const user = await User.findById(req.user._id).populate("address");
+      if (!user) return res.status(404).json({ message: "User not found" });
+  
+      const { password, ...rest } = user._doc;
+      res.status(200).json(rest);
     } catch (err) {
       console.error("Failed to get user profile:", err);
       res.status(500).json({ message: "Failed to retrieve user data." });

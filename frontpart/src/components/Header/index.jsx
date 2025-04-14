@@ -15,6 +15,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Divider from "@mui/material/Divider";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import { Person, ShoppingCart, Favorite, LocalOffer, CardGiftcard, Logout } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 
 // Styled Badge Component
 const StyledBadge = styled(Badge)(({ theme }) => ({
@@ -29,6 +30,7 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
 }));
 
 function Header() {
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -40,7 +42,27 @@ function Header() {
     setAnchorEl(null);
   };
 
+
   const context = useContext(AuthContext);
+  const handleLogout = async () => {
+    try {
+      await axios.post(
+        "http://localhost:5000/api/user/logout",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } catch (err) {
+      console.warn("Logout failed on backend");
+    } finally {
+      localStorage.removeItem("token");
+      context.setIsLogin(false); // Update login state
+      navigate("/");
+    }
+  }
 
   return (
     <header className="w-full">
@@ -104,28 +126,28 @@ function Header() {
                     anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
                   >
                     <Link to={"/MyAccount"}>
-                    <MenuItem sx={{ justifyContent: "flex-start" }}>
-                      <ListItemIcon>
-                        <Person fontSize="small" />
-                      </ListItemIcon>
-                      My Account
-                    </MenuItem>
+                      <MenuItem sx={{ justifyContent: "flex-start" }}>
+                        <ListItemIcon>
+                          <Person fontSize="small" />
+                        </ListItemIcon>
+                        My Account
+                      </MenuItem>
                     </Link>
                     <Link to={'/Order'}>
-                    <MenuItem sx={{ justifyContent: "flex-start" }}>
-                      <ListItemIcon>
-                        <ShoppingCart fontSize="small" />
-                      </ListItemIcon>
-                      Orders
-                    </MenuItem>
+                      <MenuItem sx={{ justifyContent: "flex-start" }}>
+                        <ListItemIcon>
+                          <ShoppingCart fontSize="small" />
+                        </ListItemIcon>
+                        Orders
+                      </MenuItem>
                     </Link>
                     <Link to={"/WishList"}>
-                    <MenuItem sx={{ justifyContent: "flex-start" }}>
-                      <ListItemIcon>
-                        <Favorite fontSize="small" />
-                      </ListItemIcon>
-                      Wishlist
-                    </MenuItem>
+                      <MenuItem sx={{ justifyContent: "flex-start" }}>
+                        <ListItemIcon>
+                          <Favorite fontSize="small" />
+                        </ListItemIcon>
+                        Wishlist
+                      </MenuItem>
                     </Link>
                     <MenuItem sx={{ justifyContent: "flex-start" }}>
                       <ListItemIcon>
@@ -140,7 +162,7 @@ function Header() {
                       Gift Card
                     </MenuItem>
                     <Divider />
-                    <MenuItem sx={{ justifyContent: "flex-start" }}>
+                    <MenuItem onClick={handleLogout} sx={{ justifyContent: "flex-start" }}>
                       <ListItemIcon>
                         <Logout fontSize="small" />
                       </ListItemIcon>
@@ -158,13 +180,13 @@ function Header() {
                 </StyledBadge>
               </IconButton>
             </Link>
-            
+
             <Link to={"/WishList"}>
-            <IconButton aria-label="wishlist">
-              <StyledBadge badgeContent={0}>
-                <FaRegHeart className="text-xl hover:text-[#FF3D3D]" />
-              </StyledBadge>
-            </IconButton>
+              <IconButton aria-label="wishlist">
+                <StyledBadge badgeContent={0}>
+                  <FaRegHeart className="text-xl hover:text-[#FF3D3D]" />
+                </StyledBadge>
+              </IconButton>
             </Link>
           </div>
         </div>

@@ -1,231 +1,243 @@
-
 import React, { useState } from "react";
-import { FaUpload } from "react-icons/fa";
 import UploadBox from "../../Components/Upload/upload";
 
-function AddProducts () {
-  const [product, setProduct] = useState({
-    name: "",
-    description: "",
-    category: "",
-    subcategory: "",
-    price: "",
-    newPrice: "",
-    isFeatured: false,
-    stock: "",
-    brand: "",
-    weight: "",
-    size: "",
-    rating: "",
-    discount: "",
-    images: [],
-  });
+const initialForm = {
+  name: "",
+  description: "",
+  price: "",
+  category: "",
+  subCategory: "",
+  productSize: [],
+  productWeight: [],
+  discount: "",
+  stock: "",
+  brand: "",
+  location: {
+    value: "",
+    label: "",
+  },
+  images: [],
+};
+
+function AddProduct() {
+  const [formData, setFormData] = useState(initialForm);
+  const [productSizeInput, setProductSizeInput] = useState("");
+  const [productWeightInput, setProductWeightInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setProduct((prev) => ({
+    const { name, value } = e.target;
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
+      setFormData((prev) => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
+
+  const handleArrayInput = (value, field) => {
+    const array = value
+      .split(",")
+      .map((v) => v.trim())
+      .filter((v) => v !== "");
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [field]: array,
     }));
   };
 
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    setProduct((prev) => ({
-      ...prev,
-      images: [...prev.images, ...files],
-    }));
+  const handleImageUpload = (images) => {
+    setFormData((prev) => ({ ...prev, images }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Product added:", product);
-    alert("Product added successfully!");
+
+    if (!formData.name || !formData.description || !formData.price || !formData.category || !formData.stock) {
+      return alert("Please fill all required fields.");
+    }
+
+    if (!formData.images.length) {
+      return alert("Please upload at least one product image.");
+    }
+
+    try {
+      setLoading(true);
+
+      const payload = {
+        ...formData,
+        price: Number(formData.price),
+        stock: Number(formData.stock),
+        discount: Number(formData.discount) || 0,
+        brand: formData.brand || "Generic",
+      };
+
+      const res = await fetch("/api/products/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Something went wrong.");
+
+      alert("Product added successfully!");
+      setFormData(initialForm);
+      setProductSizeInput("");
+      setProductWeightInput("");
+    } catch (err) {
+      console.error("Error:", err);
+      alert(err.message || "Failed to add product.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <section className="max-w-4xl mx-auto p-8 bg-white shadow-xl rounded-lg mt-10 border border-gray-200">
-      <h2 className="text-3xl font-semibold text-gray-900 mb-6 text-center">
-        Add Product
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Product Name & Brand */}
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block font-medium text-gray-700">Product Name</label>
-            <input
-              type="text"
-              name="name"
-              value={product.name}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-          <div>
-            <label className="block font-medium text-gray-700">Product Brand</label>
-            <input
-              type="text"
-              name="brand"
-              value={product.brand}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-        </div>
+    <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-lg mt-10">
+      <h2 className="text-2xl font-bold mb-6">Add New Product</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
 
-        {/* Product Description */}
-        <div>
-          <label className="block font-medium text-gray-700">Product Description</label>
-          <textarea
-            name="description"
-            value={product.description}
-            onChange={handleChange}
-            required
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-          />
-        </div>
+        <input
+          type="text"
+          name="name"
+          placeholder="Product Name"
+          value={formData.name}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+          required
+        />
 
-        {/* Category & Subcategory */}
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block font-medium text-gray-700">Category</label>
-            <select
-              name="category"
-              value={product.category}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="">Select Category</option>
-              <option value="electronics">Electronics</option>
-              <option value="fashion">Fashion</option>
-              <option value="home">Home</option>
-              <option value="books">Books</option>
-            </select>
-          </div>
-          <div>
-            <label className="block font-medium text-gray-700">Subcategory</label>
-            <input
-              type="text"
-              name="subcategory"
-              value={product.subcategory}
-              onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-        </div>
+        <textarea
+          name="description"
+          placeholder="Product Description"
+          value={formData.description}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+          required
+        />
 
-        {/* Pricing & Discount */}
-        <div className="grid grid-cols-3 gap-6">
-          <div>
-            <label className="block font-medium text-gray-700">Price (₹)</label>
-            <input
-              type="number"
-              name="price"
-              value={product.price}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-          <div>
-            <label className="block font-medium text-gray-700">New Price (₹)</label>
-            <input
-              type="number"
-              name="newPrice"
-              value={product.newPrice}
-              onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-          <div>
-            <label className="block font-medium text-gray-700">Discount (%)</label>
-            <input
-              type="number"
-              name="discount"
-              value={product.discount}
-              onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-        </div>
+        <input
+          type="number"
+          name="price"
+          placeholder="Price"
+          value={formData.price}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+          required
+        />
 
-        {/* Stock, Weight & Size */}
-        <div className="grid grid-cols-3 gap-6">
-          <div>
-            <label className="block font-medium text-gray-700">Stock</label>
-            <input
-              type="number"
-              name="stock"
-              value={product.stock}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-          <div>
-            <label className="block font-medium text-gray-700">Weight (kg)</label>
-            <input
-              type="number"
-              name="weight"
-              value={product.weight}
-              onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-          <div>
-            <label className="block font-medium text-gray-700">Size</label>
-            <input
-              type="text"
-              name="size"
-              value={product.size}
-              onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-        </div>
+        <input
+          type="text"
+          name="category"
+          placeholder="Category (MongoDB ID)"
+          value={formData.category}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+          required
+        />
 
-        {/* Rating & Featured */}
-        <div className="flex items-center gap-6">
-          <div>
-            <label className="block font-medium text-gray-700">Rating (1-5)</label>
-            <input
-              type="number"
-              name="rating"
-              value={product.rating}
-              onChange={handleChange}
-              min="1"
-              max="5"
-              step="0.1"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              name="isFeatured"
-              checked={product.isFeatured}
-              onChange={handleChange}
-              className="mr-2"
-            />
-            Featured Product
-          </label>
-        </div>
+        <input
+          type="text"
+          name="subCategory"
+          placeholder="Subcategory"
+          value={formData.subCategory}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+        />
 
-        {/* Image Upload */}
-        <div className="border p-4 rounded-lg">
-         <UploadBox/>
-        </div>
+        <input
+          type="text"
+          placeholder="Product Sizes (e.g. S, M, L)"
+          value={productSizeInput}
+          onChange={(e) => {
+            setProductSizeInput(e.target.value);
+            handleArrayInput(e.target.value, "productSize");
+          }}
+          className="w-full p-2 border rounded"
+        />
 
-        {/* Submit Button */}
-        <button className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition">
-          Add Product
+        <input
+          type="text"
+          placeholder="Product Weights (e.g. 500g, 1kg)"
+          value={productWeightInput}
+          onChange={(e) => {
+            setProductWeightInput(e.target.value);
+            handleArrayInput(e.target.value, "productWeight");
+          }}
+          className="w-full p-2 border rounded"
+        />
+
+        <input
+          type="number"
+          name="discount"
+          placeholder="Discount (%)"
+          value={formData.discount}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+        />
+
+        <input
+          type="number"
+          name="stock"
+          placeholder="Stock"
+          value={formData.stock}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+          required
+        />
+
+        <input
+          type="text"
+          name="brand"
+          placeholder="Brand"
+          value={formData.brand}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+        />
+
+        <input
+          type="text"
+          name="location.value"
+          placeholder="Location Value (e.g. City)"
+          value={formData.location.value}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+        />
+
+        <input
+          type="text"
+          name="location.label"
+          placeholder="Location Label"
+          value={formData.location.label}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+        />
+
+        <UploadBox onUpload={handleImageUpload} />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className={`px-6 py-2 text-white rounded ${loading ? "bg-gray-400" : "bg-green-500 hover:bg-green-600"}`}
+        >
+          {loading ? "Submitting..." : "Submit Product"}
         </button>
       </form>
-    </section>
+    </div>
   );
-};
+}
 
-export default AddProducts;
+export default AddProduct;
