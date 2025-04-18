@@ -29,6 +29,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import CloseIcon from "@mui/icons-material/Close";
 import Slide from "@mui/material/Slide";
+import AdminCategoryManager from "./Pages/categoryList";
 
 // Create Contexts
 const DialogContext = createContext();
@@ -158,6 +159,8 @@ function AppContent() {
             <Route path="/verify" element={<Verify />} />
             <Route path="/myaccount" element={<MyAccount />} />
             <Route path="/products/add" element={<AddProducts />} />
+            <Route path="/categoryList" element={<AdminCategoryManager />} />
+           
           </Routes>
         </main>
       </div>

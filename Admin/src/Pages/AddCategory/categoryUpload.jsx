@@ -1,35 +1,29 @@
-import React, { useState, useRef } from 'react';
-import { X, UploadCloud, Loader } from 'lucide-react';
+import React, { useRef, useState } from "react";
+import { X, UploadCloud, Loader } from "lucide-react";
 
 function Upload({ categoryId, onImageUpload }) {
-  const [images, setImages] = useState([]);
-  const [previews, setPreviews] = useState([]);
+  const [preview, setPreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
 
   const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    const filePreviews = files.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-    }));
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    setImages((prev) => [...prev, ...files]);
-    setPreviews((prev) => [...prev, ...filePreviews]);
+    const url = URL.createObjectURL(file);
+    setPreview({ file, url });
 
-    uploadImages(files);
+    await uploadImage(file);
   };
 
-  const uploadImages = async (imagesToUpload) => {
-    if (!imagesToUpload.length) return;
-
+  const uploadImage = async (file) => {
     setIsUploading(true);
 
     try {
       const formData = new FormData();
-      formData.append("image", imagesToUpload[0]); // Assume one image upload at a time
+      formData.append("image", file);
 
       const response = await fetch(`${BASE_URL}/api/categories/uploadImage/${categoryId}`, {
         method: "POST",
@@ -40,33 +34,23 @@ function Upload({ categoryId, onImageUpload }) {
 
       if (!response.ok) throw new Error(data.message || "Upload failed");
 
-      // After successful upload, pass the image URL to the parent component
-      onImageUpload(data.image.url);
+      onImageUpload({
+        url: data.image.url,
+        public_id: data.image.public_id,
+      });
 
-      // Update the preview with the uploaded image's URL
-      setPreviews([
-        {
-          file: imagesToUpload[0],
-          url: data.image.url,
-        },
-      ]);
-
+      setPreview({ file, url: data.image.url });
       alert("✅ Image uploaded successfully!");
     } catch (error) {
-      console.error(error);
+      console.error("Upload failed:", error);
       alert("❌ Image upload failed");
     } finally {
       setIsUploading(false);
     }
   };
 
-  const removeImage = (index) => {
-    const updatedImages = [...images];
-    const updatedPreviews = [...previews];
-    updatedImages.splice(index, 1);
-    updatedPreviews.splice(index, 1);
-    setImages(updatedImages);
-    setPreviews(updatedPreviews);
+  const removeImage = () => {
+    setPreview(null);
   };
 
   return (
@@ -93,24 +77,22 @@ function Upload({ categoryId, onImageUpload }) {
         </div>
       )}
 
-      {previews.length > 0 && !isUploading && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 mt-6">
-          {previews.map((preview, idx) => (
-            <div key={idx} className="relative w-full h-28 rounded-xl overflow-hidden shadow-sm">
-              <img
-                src={preview.url}
-                alt={`Preview ${idx}`}
-                className="object-cover w-full h-full"
-              />
-              <button
-                type="button"
-                onClick={() => removeImage(idx)}
-                className="absolute top-2 right-2 p-1 bg-white rounded-full text-red-500"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          ))}
+      {preview && !isUploading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+          <div className="relative w-full h-28 rounded-xl overflow-hidden shadow-sm">
+            <img
+              src={preview.url}
+              alt="Uploaded Preview"
+              className="object-cover w-full h-full"
+            />
+            <button
+              type="button"
+              onClick={removeImage}
+              className="absolute top-2 right-2 p-1 bg-white rounded-full text-red-500"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
       )}
     </div>

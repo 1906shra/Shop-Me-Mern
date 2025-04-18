@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Upload from "./categoryUpload"; // Image upload component
+import Upload from "./categoryUpload";
 
 const initialCategory = {
   name: "",
@@ -9,14 +9,15 @@ const initialCategory = {
 function AddCategory() {
   const [formData, setFormData] = useState(initialCategory);
   const [loading, setLoading] = useState(false);
-  const [categoryId, setCategoryId] = useState(null); // Track created category ID
+  const [categoryId, setCategoryId] = useState(null);
   const [allCategories, setAllCategories] = useState([]);
   const [error, setError] = useState("");
-  const [categoryImage, setCategoryImage] = useState(null); // Store the uploaded image URL
+
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("/api/categories/getCategory");
+      const res = await fetch(`${BASE_URL}/api/categories/getCategory`);
       const data = await res.json();
       setAllCategories(data);
     } catch (err) {
@@ -44,7 +45,7 @@ function AddCategory() {
     try {
       setLoading(true);
 
-      const res = await fetch("http://localhost:5000/api/categories/createCategory", {
+      const res = await fetch(`${BASE_URL}/api/categories/createCategory`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -56,10 +57,10 @@ function AddCategory() {
 
       if (!res.ok) throw new Error(data.message || "Failed to create category");
 
-      alert("Category created successfully!");
-      setCategoryId(data._id); // Set the created category ID
+      alert("✅ Category created successfully!");
+      setCategoryId(data.category._id);
       setFormData(initialCategory);
-      fetchCategories(); // Re-fetch categories after adding new one
+      fetchCategories();
     } catch (err) {
       console.error(err);
       setError(err.message || "Something went wrong");
@@ -68,35 +69,39 @@ function AddCategory() {
     }
   };
 
- const handleImageUpload = async ({ url, public_id }) => {
-  setCategoryImage(url);
+  const handleImageUpload = async ({ url, public_id }) => {
+    if (!categoryId) {
+      alert("❌ No category ID available. Please create the category first.");
+      return;
+    }
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const res = await fetch(`http://localhost:5000/api/categories/updateCategory/${categoryId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        images: [{ url, public_id }],
-      }),
-    });
+      const res = await fetch(`${BASE_URL}/api/categories/updateCategory/${categoryId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image: url, // update top-level image
+          images: [{ url, public_id }], // also push to images array
+        }),
+        
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) throw new Error(data.message || "Failed to update category with image");
+      if (!res.ok) throw new Error(data.message || "Failed to update category with image");
 
-    alert("✅ Category updated with image!");
-  } catch (err) {
-    console.error(err);
-    alert("❌ Failed to update category with image");
-  } finally {
-    setLoading(false);
-  }
-};
-
+      alert("✅ Category updated with image!");
+    } catch (err) {
+      console.error("Error updating category with image:", err);
+      alert("❌ Failed to update category with image");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-xl mx-auto mt-10 bg-white p-6 rounded shadow">

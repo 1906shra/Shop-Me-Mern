@@ -7,11 +7,12 @@ import {FiHome,FiUsers,FiSettings,
   FiFolder,
 } from "react-icons/fi";
 import { DialogContext } from "../../App";
-import AddProducts from "../../Pages/Products/addProducts";
+import ProductUploader from "../../Pages/Products/addProducts";
 import CategoryUpload from "../../Pages/AddCategory/categoryUpload";
 import SubCategory from "../../Pages/AddCategory/SubCategory";
 import AddCategory from "../../Pages/AddCategory/addCategory";
 import { useNavigate } from "react-router-dom";
+import AdminCategoryManager from "../../Pages/categoryList";
 
 function Sidebar() {
   const navigate = useNavigate();
@@ -67,13 +68,14 @@ function Sidebar() {
             <ul className="pl-6 space-y-2">
               <li
                 className={getItemClass("Category List")}
-                onClick={() => navigate("/addCategory")}
+                onClick={() => navigate("/categoryList")}
+               
               >
                 <FiTag /> Category List
               </li>
               <li
                 className={getItemClass("Category Upload")}
-                onClick={() => openDialog(<CategoryUpload/>)}
+                onClick={() => navigate("/addCategory")}
               >
                 <FiUpload /> Category Upload
               </li>
@@ -124,7 +126,7 @@ function Sidebar() {
                 className={getItemClass("Product Upload")}
               
                   
-                onClick={() => openDialog(<AddProducts />)}
+                onClick={() => openDialog(<ProductUploader />)}
               >
                 <FiUpload /> Product Upload
               </li>

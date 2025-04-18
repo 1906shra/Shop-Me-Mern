@@ -1,243 +1,269 @@
-import React, { useState } from "react";
-import UploadBox from "../../Components/Upload/upload";
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { X } from 'lucide-react';
 
-const initialForm = {
-  name: "",
-  description: "",
-  price: "",
-  category: "",
-  subCategory: "",
-  productSize: [],
-  productWeight: [],
-  discount: "",
-  stock: "",
-  brand: "",
-  location: {
-    value: "",
-    label: "",
-  },
-  images: [],
-};
+const ProductUploader = () => {
+  const [productData, setProductData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    category: '',
+    subCategory: '',
+    productSize: [],
+    productWeight: [],
+    discount: 0,
+    ratings: 0,
+    stock: '',
+    location: { value: '', label: '' },
+  });
 
-function AddProduct() {
-  const [formData, setFormData] = useState(initialForm);
-  const [productSizeInput, setProductSizeInput] = useState("");
-  const [productWeightInput, setProductWeightInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
+  const [message, setMessage] = useState('');
+  const [productId, setProductId] = useState(null);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/categories/getCategory");
+        const data = await res.json();
+        setCategories(data);
+      } catch (error) {
+        console.error("Error fetching categories", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes(".")) {
-      const [parent, child] = name.split(".");
-      setFormData((prev) => ({
+    if (name.startsWith('location.')) {
+      const field = name.split('.')[1];
+      setProductData((prev) => ({
         ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value,
-        },
+        location: { ...prev.location, [field]: value },
       }));
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+      setProductData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleArrayInput = (value, field) => {
-    const array = value
-      .split(",")
-      .map((v) => v.trim())
-      .filter((v) => v !== "");
-    setFormData((prev) => ({
-      ...prev,
-      [field]: array,
-    }));
+  const handleImageChange = (files) => {
+    const fileArray = Array.from(files);
+    const previews = fileArray.map((file) => URL.createObjectURL(file));
+    setImageFiles((prev) => [...prev, ...fileArray]);
+    setPreviewUrls((prev) => [...prev, ...previews]);
   };
 
-  const handleImageUpload = (images) => {
-    setFormData((prev) => ({ ...prev, images }));
-  };
-
-  const handleSubmit = async (e) => {
+  const handleDrop = (e) => {
     e.preventDefault();
+    const files = e.dataTransfer.files;
+    handleImageChange(files);
+  };
 
-    if (!formData.name || !formData.description || !formData.price || !formData.category || !formData.stock) {
-      return alert("Please fill all required fields.");
+  const removeImage = (index) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCreateProduct = async () => {
+    const { name, description, price, stock, category } = productData;
+
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+    const parsedPrice = Number(price);
+    const parsedStock = Number(stock);
+
+    // Log raw input values for debugging
+    console.log("🔍 Validating:", {
+      name: trimmedName,
+      description: trimmedDescription,
+      category,
+      price: parsedPrice,
+      stock: parsedStock,
+    });
+
+    const missingFields = [];
+
+    if (!trimmedName.length) missingFields.push("name");
+    if (!trimmedDescription.length) missingFields.push("description");
+    if (!category || category === "") missingFields.push("category");
+    if (!price || isNaN(parsedPrice)) missingFields.push("price");
+    if (!stock || isNaN(parsedStock)) missingFields.push("stock");
+
+    if (missingFields.length > 0) {
+      setMessage(`❌ Missing or invalid: ${missingFields.join(', ')}`);
+      console.error("🚫 Validation failed:", missingFields);
+      return;
     }
 
-    if (!formData.images.length) {
-      return alert("Please upload at least one product image.");
-    }
+    const payload = {
+      ...productData,
+      name: trimmedName,
+      description: trimmedDescription,
+      price: parsedPrice,
+      stock: parsedStock,
+      discount: Number(productData.discount || 0),
+      ratings: Number(productData.ratings || 0),
+      images: [],
+    };
 
+    console.log("📦 Final payload:", payload);
+
+    setMessage('⏳ Creating product...');
     try {
-      setLoading(true);
-
-      const payload = {
-        ...formData,
-        price: Number(formData.price),
-        stock: Number(formData.stock),
-        discount: Number(formData.discount) || 0,
-        brand: formData.brand || "Generic",
-      };
-
-      const res = await fetch("/api/products/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const res = await fetch('http://localhost:5000/api/products/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       const data = await res.json();
+      if (res.status !== 201) throw new Error(data.message || 'Failed to create product');
 
-      if (!res.ok) throw new Error(data.message || "Something went wrong.");
-
-      alert("Product added successfully!");
-      setFormData(initialForm);
-      setProductSizeInput("");
-      setProductWeightInput("");
+      setProductId(data._id);
+      setMessage('✅ Product created! Uploading images...');
+      uploadImages(data._id);
     } catch (err) {
-      console.error("Error:", err);
-      alert(err.message || "Failed to add product.");
-    } finally {
-      setLoading(false);
+      console.error("❌ Error creating product:", err);
+      setMessage(`❌ ${err.message}`);
+    }
+  };
+
+  const uploadImages = async (id) => {
+    if (!id || imageFiles.length === 0) return;
+
+    try {
+      for (const file of imageFiles) {
+        const formData = new FormData();
+        formData.append('images', file);
+
+        const res = await fetch(`http://localhost:5000/api/products/${id}/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (res.status !== 200) throw new Error(data.message);
+      }
+
+      setMessage('✅ All images uploaded successfully!');
+    } catch (err) {
+      setMessage('❌ Some images failed to upload.');
+      console.error(err);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-lg mt-10">
-      <h2 className="text-2xl font-bold mb-6">Add New Product</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="max-w-2xl mx-auto p-6 bg-white shadow-xl rounded-2xl mt-10">
+      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Upload New Product</h2>
 
-        <input
-          type="text"
-          name="name"
-          placeholder="Product Name"
-          value={formData.name}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
+      <div className="grid gap-4">
+        {['name', 'description', 'price', 'subCategory', 'stock'].map((field) => (
+          <input
+            key={field}
+            type={(field === 'price' || field === 'stock') ? 'number' : 'text'}
+            name={field}
+            placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+            value={productData[field] || ''}
+            onChange={handleChange}
+            className="border border-gray-300 p-2 rounded-md w-full focus:ring-2 focus:ring-blue-400 outline-none"
+          />
+        ))}
 
-        <textarea
-          name="description"
-          placeholder="Product Description"
-          value={formData.description}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-
-        <input
-          type="number"
-          name="price"
-          placeholder="Price"
-          value={formData.price}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-
-        <input
-          type="text"
+        <select
           name="category"
-          placeholder="Category (MongoDB ID)"
-          value={formData.category}
+          value={productData.category}
           onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
+          className="border border-gray-300 p-2 rounded-md w-full focus:ring-2 focus:ring-blue-400 outline-none"
+        >
+          <option value="">Select Category</option>
+          {categories.map((category) => (
+            <option key={category._id} value={category._id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
 
-        <input
-          type="text"
-          name="subCategory"
-          placeholder="Subcategory"
-          value={formData.subCategory}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        />
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="text"
+            name="location.value"
+            placeholder="Location Value"
+            value={productData.location.value}
+            onChange={handleChange}
+            className="border border-gray-300 p-2 rounded-md"
+          />
+          <input
+            type="text"
+            name="location.label"
+            placeholder="Location Label"
+            value={productData.location.label}
+            onChange={handleChange}
+            className="border border-gray-300 p-2 rounded-md"
+          />
+        </div>
 
-        <input
-          type="text"
-          placeholder="Product Sizes (e.g. S, M, L)"
-          value={productSizeInput}
-          onChange={(e) => {
-            setProductSizeInput(e.target.value);
-            handleArrayInput(e.target.value, "productSize");
-          }}
-          className="w-full p-2 border rounded"
-        />
+        <div
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+          onClick={() => fileInputRef.current.click()}
+          className="border-2 border-dashed border-blue-400 p-4 rounded-lg text-center cursor-pointer bg-blue-50 hover:bg-blue-100 transition"
+        >
+          <p className="text-gray-700">Drag & Drop images here or click to select</p>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={(e) => handleImageChange(e.target.files)}
+            className="hidden"
+          />
+        </div>
 
-        <input
-          type="text"
-          placeholder="Product Weights (e.g. 500g, 1kg)"
-          value={productWeightInput}
-          onChange={(e) => {
-            setProductWeightInput(e.target.value);
-            handleArrayInput(e.target.value, "productWeight");
-          }}
-          className="w-full p-2 border rounded"
-        />
-
-        <input
-          type="number"
-          name="discount"
-          placeholder="Discount (%)"
-          value={formData.discount}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        />
-
-        <input
-          type="number"
-          name="stock"
-          placeholder="Stock"
-          value={formData.stock}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
-
-        <input
-          type="text"
-          name="brand"
-          placeholder="Brand"
-          value={formData.brand}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        />
-
-        <input
-          type="text"
-          name="location.value"
-          placeholder="Location Value (e.g. City)"
-          value={formData.location.value}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        />
-
-        <input
-          type="text"
-          name="location.label"
-          placeholder="Location Label"
-          value={formData.location.label}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-        />
-
-        <UploadBox onUpload={handleImageUpload} />
+        {previewUrls.length > 0 && (
+          <div className="flex gap-3 flex-wrap mt-2">
+            {previewUrls.map((url, idx) => (
+              <div key={idx} className="relative w-24 h-24">
+                <img
+                  src={url}
+                  alt={`preview-${idx}`}
+                  className="w-full h-full object-cover rounded-md shadow"
+                />
+                <button
+                  onClick={() => removeImage(idx)}
+                  className="absolute top-0 right-0 bg-white p-1 rounded-full shadow hover:bg-red-100"
+                >
+                  <X className="w-4 h-4 text-red-600" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         <button
-          type="submit"
-          disabled={loading}
-          className={`px-6 py-2 text-white rounded ${loading ? "bg-gray-400" : "bg-green-500 hover:bg-green-600"}`}
+          onClick={handleCreateProduct}
+          className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-all"
         >
-          {loading ? "Submitting..." : "Submit Product"}
+          Create Product
         </button>
-      </form>
+
+        {message && (
+          <motion.p
+            className="text-center font-medium mt-4"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {message}
+          </motion.p>
+        )}
+      </div>
     </div>
   );
-}
+};
 
-export default AddProduct;
+export default ProductUploader;
