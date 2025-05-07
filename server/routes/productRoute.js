@@ -17,7 +17,8 @@ router.get("/get", getAllProducts);
 router.get("/get/:id", getProductById);
 router.put("/update/:id", updateProduct);
 router.delete("/delete/:id", deleteProduct);
-router.post("/:id/upload", upload.single("image"), uploadProductImage);
+router.post("/:id/upload", upload.array("images", 5), uploadProductImage);
+
 router.get("/category/:category", getProductsByCategory);
 router.get("/filter", getFilteredProducts);
 

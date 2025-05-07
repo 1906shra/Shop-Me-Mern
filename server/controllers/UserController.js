@@ -136,7 +136,9 @@ export const verifyEmail = async (req, res) => {
         }
 
         const token = generateToken(user._id);
-        res.cookie("token", token, { httpOnly: true, secure: true, sameSite: "strict" });
+        res.cookie("token", token, { httpOnly: true, secure: true, sameSite: "Lax" ,
+          maxAge: 24*60*60*1000 // 1 day
+        });
 
         res.status(200).json({ 
             message: "User logged in successfully", 

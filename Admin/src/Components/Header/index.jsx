@@ -24,12 +24,12 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { isLogin, setIsLogin } = useContext(AuthContext);
+  const { isLogin, setIsLogin, userInfo, loading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const goToMyAccount = () => navigate("/myaccount");
-  const goToLogin = () => navigate("/Login");
-  const goToRegister = () => navigate("/SignUp");
+  const goToLogin = () => navigate("/login");
+  const goToRegister = () => navigate("/signup");
 
   const handleLogout = async () => {
     const token = localStorage.getItem("token");
@@ -47,18 +47,20 @@ function Header() {
         throw new Error(errorData.message || "Logout failed");
       }
 
-      setIsLogin(false);
+      alert("Logged out successfully!");
     } catch (err) {
       console.warn("Logout failed on backend:", err.message);
     } finally {
       localStorage.removeItem("token");
-      navigate("/");
+     // localStorage.removeItem("adminInfo");
+      setIsLogin(false);
+      navigate("/login");
     }
   };
 
   return (
     <header className="w-full h-20 bg-white shadow-md flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50">
-      {/* Left Section - Logo and Menu Button */}
+      {/* Left Section - Logo and Menu */}
       <div className="flex items-center gap-4">
         <img src={img1} alt="Logo" className="w-full h-16 object-contain" />
         <IconButton className="p-0 w-auto h-auto" size="small">
@@ -66,18 +68,17 @@ function Header() {
         </IconButton>
       </div>
 
-      {/* Right Section - Notifications & Profile */}
+      {/* Right Section */}
       <div className="relative flex items-center gap-6">
-        {/* Notification Icon */}
         <IconButton aria-label="notifications" className="p-0 w-auto h-auto">
-          <StyledBadge badgeContent={4} color="primary">
+          <StyledBadge badgeContent={4}>
             <MdNotifications className="text-[24px] text-gray-700" />
           </StyledBadge>
         </IconButton>
 
-        {/* Conditional Rendering for Login/Profile */}
-        {isLogin === true ? (
-          // Admin Profile
+        {loading ? (
+          <div className="text-gray-500">Loading...</div>
+        ) : isLogin ? (
           <div className="relative">
             <img
               src={img}
@@ -86,11 +87,17 @@ function Header() {
               onClick={() => setMenuOpen(!menuOpen)}
             />
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-6">
-                <button className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
+              <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-4 z-50">
+                <button
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  onClick={() => navigate("/")}
+                >
                   <FiHome className="text-gray-600" /> Dashboard
                 </button>
-                <button className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
+                <button
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  onClick={() => navigate("/users")}
+                >
                   <FiUsers className="text-gray-600" /> Manage Users
                 </button>
                 <button
@@ -99,7 +106,10 @@ function Header() {
                 >
                   <FiUser className="text-gray-600" /> Profile
                 </button>
-                <button className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
+                <button
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  onClick={() => alert("Settings coming soon!")}
+                >
                   <FiSettings className="text-gray-600" /> Settings
                 </button>
                 <button
@@ -114,12 +124,14 @@ function Header() {
         ) : (
           <div className="flex items-center gap-2">
             <Button
+              variant="contained"
               className="!bg-[#FF3D3D] !text-white hover:!bg-white hover:!text-[#FF3D3D] transition-colors duration-300"
               onClick={goToLogin}
             >
               Login
             </Button>
             <Button
+              variant="contained"
               className="!bg-[#FF3D3D] !text-white hover:!bg-white hover:!text-[#FF3D3D] transition-colors duration-300"
               onClick={goToRegister}
             >

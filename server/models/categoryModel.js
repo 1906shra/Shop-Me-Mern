@@ -7,6 +7,10 @@ const categorySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    image: {
+      type: String,
+      trim: true,
+    },
     images: {
       type: [
         {
@@ -15,11 +19,6 @@ const categorySchema = new mongoose.Schema(
         },
       ],
       default: [],
-    },
-    parentCatId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "ParentCategory", // This links to ParentCategory model
-      default: null,
     },
   },
   { timestamps: true }

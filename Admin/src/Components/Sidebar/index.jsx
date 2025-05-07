@@ -13,6 +13,7 @@ import SubCategory from "../../Pages/AddCategory/SubCategory";
 import AddCategory from "../../Pages/AddCategory/addCategory";
 import { useNavigate } from "react-router-dom";
 import AdminCategoryManager from "../../Pages/categoryList";
+import ProductList from "../../Pages/productList/productlist";
 
 function Sidebar() {
   const navigate = useNavigate();
@@ -118,7 +119,8 @@ function Sidebar() {
             <ul className="pl-6 space-y-2">
               <li
                 className={getItemClass("Product List")}
-                onClick={() => handleSelect("Product List")}
+                onClick={() => navigate("/productList")}
+                
               >
                 <FiList /> Product List
               </li>

@@ -30,6 +30,7 @@ import Button from "@mui/material/Button";
 import CloseIcon from "@mui/icons-material/Close";
 import Slide from "@mui/material/Slide";
 import AdminCategoryManager from "./Pages/categoryList";
+import ProductList from "./Pages/productList/productlist";
 
 // Create Contexts
 const DialogContext = createContext();
@@ -54,52 +55,58 @@ function App() {
 }
 
 // ✅ Auth Provider (Manages admin login state)
-function AuthProvider({ children }) {
+export function AuthProvider({ children }) {
   const [isLogin, setIsLogin] = useState(false);
   const [userInfo, setUserInfo] = useState(() => {
-    const stored = localStorage.getItem("adminInfo");
-    return stored ? JSON.parse(stored) : null;
+    const storedUser = localStorage.getItem("adminInfo");
+    return storedUser ? JSON.parse(storedUser) : null;
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    const fetchUser = async () => {
+    const fetchAdminProfile = async () => {
       try {
-        const res = await fetch("/admin/me", {
+        const res = await fetch("http://localhost:5000/api/admin/me", {
+          method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        const data = await res.json();
-        if (res.ok) {
-          setUserInfo(data);
-          localStorage.setItem("adminInfo", JSON.stringify(data));
-          setIsLogin(true);
-        } else {
-          console.warn("Auto-login failed:", data.message);
-          setIsLogin(false);
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch admin profile");
         }
-      } catch (err) {
-        console.error("Error fetching admin profile:", err);
+
+        const data = await res.json();
+        setUserInfo(data);
+        localStorage.setItem("adminInfo", JSON.stringify(data));
+        setIsLogin(true);
+      } catch (error) {
+        console.error("Auto-login error:", error.message);
         setIsLogin(false);
+        setUserInfo(null);
+        localStorage.removeItem("adminInfo");
+        localStorage.removeItem("token");
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (token && !userInfo) {
-      fetchUser();
-    } else if (token && userInfo) {
-      setIsLogin(true);
+    if (token) {
+      fetchAdminProfile();
+    } else {
+      setLoading(false);
     }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isLogin, setIsLogin, userInfo, setUserInfo }}>
+    <AuthContext.Provider value={{ isLogin, setIsLogin, userInfo, setUserInfo, loading }}>
       {children}
     </AuthContext.Provider>
   );
 }
-
 
 // ✅ Dialog Provider (Global dialog box)
 function DialogProvider({ children }) {
@@ -129,12 +136,21 @@ function DialogProvider({ children }) {
 // ✅ Layout Wrapper: Header + Sidebar + Main Routes
 function AppContent() {
   const location = useLocation();
-  const { isLogin } = useContext(AuthContext);
+  const { isLogin, loading } = useContext(AuthContext);
 
   const hideSidebar =
     ["/login", "/signup", "/forgotpassword"].some((p) =>
       location.pathname.toLowerCase().startsWith(p)
     ) || location.pathname.startsWith("/verify");
+
+  // ⏳ Wait for loading to complete
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-2xl font-semibold">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -160,7 +176,7 @@ function AppContent() {
             <Route path="/myaccount" element={<MyAccount />} />
             <Route path="/products/add" element={<AddProducts />} />
             <Route path="/categoryList" element={<AdminCategoryManager />} />
-           
+            <Route path="/productList" element={<ProductList />} />
           </Routes>
         </main>
       </div>

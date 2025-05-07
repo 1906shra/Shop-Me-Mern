@@ -1,4 +1,3 @@
-// controllers/productController.js
 import cloudinary from "../config/cloudinary.js";
 import Product from "../models/Product.js";
 
@@ -16,11 +15,10 @@ export const createProduct = async (req, res) => {
             discount,
             ratings,
             stock,
-            images,
             location
         } = req.body;
 
-        if (!name || !description || !price || !category || !stock || !images || images.length === 0) {
+        if (!name || !description || !price || !category || !stock) {
             return res.status(400).json({ message: "Required fields are missing." });
         }
 
@@ -35,7 +33,7 @@ export const createProduct = async (req, res) => {
             discount,
             ratings,
             stock,
-            images,
+            images: [], // Initialize with an empty array
             location
         });
 
@@ -70,7 +68,10 @@ export const getProductById = async (req, res) => {
 // Update product
 export const updateProduct = async (req, res) => {
     try {
-        const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate("category");
+        const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+        }).populate("category");
+
         if (!product) return res.status(404).json({ message: "Product not found" });
         res.status(200).json(product);
     } catch (error) {
@@ -93,40 +94,40 @@ export const deleteProduct = async (req, res) => {
 export const uploadProductImage = async (req, res) => {
     try {
         const productId = req.params.id;
+        const files = req.files;
 
-        if (!req.file) {
-            return res.status(400).json({ message: "No image file uploaded" });
+        if (!files || files.length === 0) {
+            return res.status(400).json({ message: "No images provided" });
         }
-
-        const result = await cloudinary.uploader.upload(req.file.path, {
-            folder: "product_images",
-        });
 
         const product = await Product.findById(productId);
         if (!product) {
             return res.status(404).json({ message: "Product not found" });
         }
 
-        if (!Array.isArray(product.images)) {
-            product.images = [];
+        for (const file of files) {
+            const result = await cloudinary.uploader.upload(file.path, {
+                folder: "shopnow/products",
+            });
+
+            product.images.push({
+                url: result.secure_url,
+                public_id: result.public_id,
+            });
         }
 
-        product.images.push(result.secure_url);
         await product.save();
-
-        res.status(200).json({
-            message: "Image uploaded successfully",
-            product,
-        });
-    } catch (error) {
-        res.status(500).json({ message: "Internal server error", error: error.message });
+        res.status(200).json({ message: "Images uploaded successfully", images: product.images });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Image upload failed" });
     }
 };
 
 // Get products by category
 export const getProductsByCategory = async (req, res) => {
     try {
-        const categoryId = req.params.categoryId;
+        const categoryId = req.params.category;
         const products = await Product.find({ category: categoryId }).populate("category");
 
         if (!products || products.length === 0) {

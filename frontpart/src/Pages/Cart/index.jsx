@@ -1,131 +1,167 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@mui/material";
+import axios from "axios";
 
 function Cart() {
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 7845,
-      company: "Product Company",
-      name: "Product Name and Description",
-      image:
-        "https://api.spicezgold.com/download/file_1734774941574_e6mcHGzb_51e00e276f0744eebaf91c9a7b2b15aa.jpg",
-      oldPrice: 9999,
-      newPrice: 7499,
-      discount: 25,
-      quantity: 1,
-      color: "Red",
-      size: "M",
-      expectedDelivery: "March 12, 2025"
-    },
-  ]);
+  const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
   const [itemToRemove, setItemToRemove] = useState(null);
+
+  const token = localStorage.getItem("token");
+
+  const fetchCart = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get("http://localhost:5000/api/cart/get", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setCartItems(res.data);
+    } catch (error) {
+      console.error("Error fetching cart:", error.response?.data || error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCart();
+  }, []);
+
+  const updateQuantity = async (id, amount) => {
+    const item = cartItems.find((item) => item._id === id);
+    const newQty = item.quantity + amount;
+    if (newQty < 1) return handleRemoveClick(item);
+
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/cart/update/${id}`,
+        { quantity: newQty },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setCartItems((prev) =>
+        prev.map((it) => (it._id === id ? res.data.updatedItem : it))
+      );
+    } catch (error) {
+      console.error("Error updating quantity:", error.response?.data || error.message);
+    }
+  };
 
   const handleRemoveClick = (item) => {
     setItemToRemove(item);
     setShowPopup(true);
   };
 
-  const confirmRemove = () => {
-    setCartItems(cartItems.filter((item) => item.id !== itemToRemove.id));
-    setShowPopup(false);
-    setItemToRemove(null);
+  const confirmRemove = async () => {
+    try {
+      await axios.delete(`http://localhost:5000/api/cart/delete/${itemToRemove._id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setCartItems((prev) =>
+        prev.filter((item) => item._id !== itemToRemove._id)
+      );
+    } catch (error) {
+      console.error("Error removing item:", error.response?.data || error.message);
+    } finally {
+      setShowPopup(false);
+      setItemToRemove(null);
+    }
   };
 
-  const updateQuantity = (id, amount) => {
-    setCartItems((prevItems) =>
-      prevItems
-        .map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity + amount } : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
-  };
+  const getEffectivePrice = (product) =>
+    product.price - product.price * (product.discount / 100);
 
-  const totalOriginalPrice = cartItems.reduce((acc, item) => acc + item.oldPrice * item.quantity, 0);
-  const totalDiscount = cartItems.reduce((acc, item) => acc + (item.oldPrice - item.newPrice) * item.quantity, 0);
+  const totalOriginalPrice = cartItems.reduce(
+    (acc, item) => acc + item.product_id.price * item.quantity,
+    0
+  );
+
+  const totalDiscount = cartItems.reduce(
+    (acc, item) =>
+      acc + (item.product_id.price - getEffectivePrice(item.product_id)) * item.quantity,
+    0
+  );
+
   const totalAmount = totalOriginalPrice - totalDiscount;
+  const totalQuantity = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
+  if (loading) return <div className="text-center mt-10">Loading cart...</div>;
 
   return (
     <section className="py-5 bg-gray-100">
       <div className="container mx-auto max-w-7xl flex flex-col md:flex-row gap-6">
+        {/* Cart Items Section */}
         <div className="w-full md:w-[70%] bg-white shadow-md rounded-md p-5">
           <h2 className="text-2xl font-semibold">Your Cart</h2>
           <p className="mt-1 text-gray-600">
-            There are <span className="font-bold text-red-500">{cartItems.length}</span> products in your cart.
+            Total Items:{" "}
+            <span className="font-bold text-red-500">{cartItems.length}</span>
+            {" | "}
+            Total Quantity: <span className="font-bold text-red-500">{totalQuantity}</span>
           </p>
           <div className="mt-5 space-y-4">
             {cartItems.length > 0 ? (
-              cartItems.map((item) => (
-                <div key={item.id} className="cartItem flex items-center gap-4 p-4 border rounded-md">
-                  <div className="w-24 h-24 overflow-hidden rounded-md">
-                    <Link to={`/product/${item.id}`} className="group">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                      />
-                    </Link>
-                  </div>
-                  <div className="flex-1 w-[90%]">
-                    <h3 className="text-lg font-semibold mt-1">
-                      <Link to={`/product/${item.id}`} className="text-blue-500 hover:underline">
-                        {item.name}
+              cartItems.map((item) => {
+                const product = item.product_id;
+                const price = getEffectivePrice(product);
+
+                return (
+                  <div key={item._id} className="flex items-center gap-4 p-4 border rounded-md">
+                    <div className="w-24 h-24 overflow-hidden rounded-md">
+                      <Link to={`/product/${product._id}`} className="group">
+                        <img
+                          src={product.images[0]?.url}
+                          alt={product.name}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        />
                       </Link>
-                    </h3>
-                    <ul className="mt-2 text-gray-700 text-sm space-y-1">
-                      <li><strong>Company:</strong> {item.company}</li>
-                      <li><strong>Color:</strong> {item.color}</li>
-                      <li><strong>Size:</strong> {item.size}</li>
-                      <li><strong>Expected Delivery:</strong> {item.expectedDelivery}</li>
-                    </ul>
-                    <p className="mt-2 text-lg">
-                      <span className="line-through text-gray-500 text-sm">₹{item.oldPrice}</span>
-                      <span className="text-red-600 font-bold text-xl ml-2">₹{item.newPrice}</span>
-                      <span className="text-green-600 font-medium text-lg ml-2">You save {item.discount}%!</span>
-                    </p>
-                    <div className="flex items-center mt-2">
-                      <button
-                        onClick={() => updateQuantity(item.id, -1)}
-                        className="px-3 py-1 bg-gray-300 text-black rounded-l-md"
-                      >
-                        -
-                      </button>
-                      <span className="px-4 py-1 bg-white border text-black">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.id, 1)}
-                        className="px-3 py-1 bg-gray-300 text-black rounded-r-md"
-                      >
-                        +
-                      </button>
                     </div>
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={() => handleRemoveClick(item)}
-                        className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
-                      >
-                        Remove
-                      </button>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold">
+                        <Link to={`/product/${product._id}`} className="text-blue-500 hover:underline">
+                          {product.name}
+                        </Link>
+                      </h3>
+                      <p className="text-gray-600 text-sm mt-1">{product.brand}</p>
+                      <div className="mt-2 text-lg">
+                        <span className="line-through text-gray-500 text-sm">₹{product.price}</span>
+                        <span className="text-red-600 font-bold text-xl ml-2">₹{price.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center mt-2">
+                        <button onClick={() => updateQuantity(item._id, -1)} className="px-3 py-1 bg-gray-300 rounded-l-md">-</button>
+                        <span className="px-4 py-1 bg-white border">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item._id, 1)} className="px-3 py-1 bg-gray-300 rounded-r-md">+</button>
+                      </div>
+                      <button onClick={() => handleRemoveClick(item)} className="mt-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">Remove</button>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p className="text-center text-gray-600 mt-4">Your cart is empty.</p>
             )}
           </div>
         </div>
+
+        {/* Price Details */}
         <div className="w-full md:w-[30%] bg-white shadow-md rounded-md p-5">
           <h3 className="text-xl font-semibold mb-4">Price Details</h3>
           <div className="space-y-3">
             <div className="flex justify-between text-gray-700">
               <span className="font-medium">Original Price</span>
-              <span>₹{totalOriginalPrice}</span>
+              <span>₹{totalOriginalPrice.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-green-600">
               <span className="font-medium">Discount</span>
-              <span>-₹{totalDiscount}</span>
+              <span>-₹{totalDiscount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-gray-700">
               <span className="font-medium">Delivery Charges</span>
@@ -134,14 +170,29 @@ function Cart() {
           </div>
           <div className="border-t mt-4 pt-3 flex justify-between text-lg font-semibold">
             <span>Total Amount</span>
-            <span>₹{totalAmount}</span>
+            <span>₹{totalAmount.toFixed(2)}</span>
           </div>
-          <p className="text-green-500 mt-1 text-sm">You will save ₹{totalDiscount} on this order</p>
-          <Link to='/checkout'>
-            <button className="w-full mt-4 bg-red-500 text-white py-2 rounded-md text-lg hover:bg-red-600">Checkout</button>
+          <p className="text-green-500 mt-1 text-sm">You will save ₹{totalDiscount.toFixed(2)} on this order</p>
+          <Link to="/checkout">
+            <button className="w-full mt-4 bg-red-500 text-white py-2 rounded-md text-lg hover:bg-red-600">
+              Checkout
+            </button>
           </Link>
         </div>
       </div>
+
+      {/* Remove confirmation popup */}
+      {showPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <p className="mb-4">Are you sure you want to remove this item?</p>
+            <div className="flex justify-center gap-4">
+              <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={confirmRemove}>Yes</button>
+              <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setShowPopup(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

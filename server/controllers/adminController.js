@@ -82,21 +82,22 @@ export const loginAdmin = async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    console.log("✅ Admin found:", admin.email);
-
     const isMatch = await admin.comparePassword(password);
     if (!isMatch) {
       console.log("❌ Password mismatch");
-      console.log("Provided:", password);
-      console.log("Stored hash:", admin.password);
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
     const token = admin.generateToken();
+    console.log(token);
+    
+
+    // Secure and cookie options
     res.cookie("adminToken", token, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production", // Use true only in production with HTTPS
       sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // optional: 7 days
     });
 
     console.log("✅ Admin login successful");
@@ -108,7 +109,6 @@ export const loginAdmin = async (req, res) => {
         email: admin.email,
         permissions: admin.permissions,
       },
-      token,
     });
   } catch (error) {
     console.error("🔥 Login error:", error);
@@ -357,20 +357,20 @@ export const sendAdminResetOTP = async (req, res) => {
   
   
   // controllers/adminController.js
-  export const getCurrentAdmin = async (req, res) => {
-    try {
-      const admin = await Admin.findById(req.admin._id); // ❌ remove populate
-      if (!admin) {
-        return res.status(404).json({ message: "Admin not found" });
-      }
+  // export const getCurrentAdmin = async (req, res) => {
+  //   try {
+  //     const admin = await Admin.findById(req.admin._id); // ❌ remove populate
+  //     if (!admin) {
+  //       return res.status(404).json({ message: "Admin not found" });
+  //     }
   
-      // Destructure sensitive fields
-      const { password, ...rest } = admin._doc;
+  //     // Destructure sensitive fields
+  //     const { password, ...rest } = admin._doc;
   
-      res.status(200).json(rest);
-    } catch (err) {
-      console.error("Failed to get admin profile:", err);
-      res.status(500).json({ message: "Failed to retrieve admin data." });
-    }
-  };
+  //     res.status(200).json(rest);
+  //   } catch (err) {
+  //     console.error("Failed to get admin profile:", err);
+  //     res.status(500).json({ message: "Failed to retrieve admin data." });
+  //   }
+  // };
   

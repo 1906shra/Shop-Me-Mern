@@ -11,7 +11,28 @@ import ProductSlider from "../../components/ProductSlider";
 import NewArrival from "../../components/NewArrival/NewArrival";
 
 import HomeSlider2 from "../../components/HomeSlider2/HomeSlider2";
+import axios from "axios";
 
+
+
+const categoryLabels = [
+  "Home & Furniture",
+  "Beauty",
+  "Electronics",
+  "Fashion",
+  "Footwear",
+  "Mobile",
+];
+
+const categoryMap = {
+  // Replace the IDs below with your real MongoDB ObjectIds for each category
+  "Home & Furniture": "6803c59d5f1718befe3e80b1",
+  "Beauty":          "6803c5e95f1718befe3e80db",
+  "Electronics":     "67fe8b7403b366736749edfd",
+  "Fashion":         "67fe8d2203b366736749ee1e",
+  "Footwear":        "67fe9aa4652d107eab9840b6",
+  "Mobile":          "6803c6535f1718befe3e8100",
+};
 function Home() {
   const calculateTimeLeft = () => {
     const offerEndTime = new Date().setHours(new Date().getHours() + 5, 0, 0); // Offer ends in 5 hours
@@ -40,12 +61,30 @@ function Home() {
   }, []);
 
 {/**Use ScrollBar */}
+
+
 const [value, setValue] = useState(0);
+  const [products, setProducts] = useState([]);
 
-const handleChange = (event, newValue) => {
-  setValue(newValue);
-};
+  const fetchProductsByCategory = async (categoryKey) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/products/category/${categoryKey}`
+      );
+      setProducts(res.data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setProducts([]);
+    }
+  };
 
+  useEffect(() => {
+    fetchProductsByCategory(categoryMap[categoryLabels[value]]);
+  }, [value]);
+
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+  };
 return (
   <>
       <HomeSlider />
@@ -123,9 +162,9 @@ return (
 
       <HomeCatSlider />
 
-      <section className="py-12 bg-whiteN gap-4">
-      <div className="container mx-auto px-6 bg-white py-10 ">
-        <div className="flex flex-col md:flex-row items-center justify-between bg-white shadow-lg rounded-2xl p-8">
+      <section className="py-12 bg-whiteN gap-4 ">
+      <div className="container mx-auto px-6 bg-white py-10  ">
+        <div className="flex flex-col md:flex-row items-center justify-between bg-white shadow-lg rounded-2xl p-8 w-[1400px]">
           {/* Left Section */}
           <div className="mb-6 md:mb-0">
             <h3 className="text-2xl font-bold text-gray-800">Popular Products</h3>
@@ -133,49 +172,35 @@ return (
           </div>
 
           {/* Right Section - Tab Menu */}
-          <div className="w-full md:w-auto">
-            <Box sx={{ maxWidth: { xs: 320, sm: 480 }, bgcolor: "background.paper" }}>
-              <Tabs
-                value={value}
-                onChange={handleChange}
-                variant="scrollable"
-                scrollButtons="auto"
-                aria-label="scrollable auto tabs example"
-                sx={{
-                  "& .MuiTabs-indicator": {
-                    backgroundColor: "#FF3D3D", // Underline color
-                  },
-                }}
-              >
-                {[
-                  "Home & Kitchen",
-                  "Beauty & Personal Care",
-                  "Sports & Fitness",
-                  "Books & Stationary",
-                  "Toys & Baby Care",
-                  "Automobiles",
-                  "More Items",
-                ].map((label, index) => (
-                  <Tab
-                    key={index}
-                    label={label}
-                    sx={{
-                      color: value === index ? "#FF3D3D" : "#4B5563", // Red when selected, gray otherwise
-                      fontWeight: value === index ? "bold" : "normal",
-                      transition: "color 0.3s ease",
-                      "&.Mui-selected": {
-                        color: "#FF3D3D", // Ensures text stays red when selected
-                      },
-                    }}
-                  />
-                ))}
-              </Tabs>
-            </Box>
-          </div>
-          
-       
+          <div className="w-[1200px] px-4">
+      <Box sx={{ maxWidth: { xs: 320, sm: 480 }, bgcolor: "background.paper" }}>
+        <Tabs
+          value={value}
+          onChange={handleChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            "& .MuiTabs-indicator": {
+              backgroundColor: "#FF3D3D",
+            },
+          }}
+        >
+          {categoryLabels.map((label, index) => (
+            <Tab
+              key={index}
+              label={label}
+              sx={{
+                color: value === index ? "#FF3D3D" : "#4B5563",
+                fontWeight: value === index ? "bold" : "normal",
+              }}
+            />
+          ))}
+        </Tabs>
+      </Box>
+
+      <ProductSlider products={products} items={5} />
+    </div>
         </div>
-           <ProductSlider items={5}/>
       </div>
        
     </section>

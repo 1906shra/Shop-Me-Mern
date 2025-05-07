@@ -11,7 +11,7 @@ import {
   verifyAdminOTP,
   resetAdminPassword,
   verifyAdminEmail,
-  getCurrentAdmin
+ // getCurrentAdmin
 } from '../controllers/adminController.js';
 
 import adminAuth from '../middleware/admin.auth.middleware.js';
@@ -29,7 +29,7 @@ router.post('/verify/:token', verifyAdminEmail);
 
 
 router.get('/me', adminAuth, getAdminProfile);
-router.put('/update-profile', adminAuth, updateAdminDetails);
+router.put('/update-profile/:id', adminAuth, updateAdminDetails);
 
 
 router.put('/upload-avatar', adminAuth, upload.single('avatar'), uploadAdminAvatar);
@@ -39,7 +39,7 @@ router.delete('/remove-avatar', adminAuth, removeAdminAvatar);
 router.post('/forgot-password', sendAdminResetOTP);
 router.post('/verify-otp', verifyAdminOTP);
 router.post('/reset-password', resetAdminPassword);
-router.get("/me", adminAuth, getCurrentAdmin);
+//router.get("/me", adminAuth, getCurrentAdmin);
 
 
 export default router;

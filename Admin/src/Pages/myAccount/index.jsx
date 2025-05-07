@@ -1,19 +1,24 @@
-// MyAccount.jsx
 import React, { useState, useEffect, useContext } from "react";
 import {
   FaUser, FaBox, FaHeart, FaSignOutAlt,
   FaCog, FaMapMarkerAlt, FaCreditCard, FaEdit, FaCamera
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import defaultImg from "../../assets/user1.png";
 import { AuthContext } from "../../App";
 
-function MyAccount() {
+const getAuthHeader = () => {
+  const token = JSON.parse(localStorage.getItem("admin"))?.token;
+  return { Authorization: `Bearer ${token}` };
+};
+
+const MyAccount = () => {
   const navigate = useNavigate();
   const { setIsLogin } = useContext(AuthContext);
-  const token = localStorage.getItem("token");
 
-  const [admin, setadmin] = useState({
+  const [userId, setUserId] = useState(null);
+  const [userInfo, setUserInfo] = useState({
     name: "",
     email: "",
     phone: "",
@@ -31,51 +36,50 @@ function MyAccount() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const fetchUser = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/api/admin/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch admin data");
-
-      const data = await res.json();
-      setadmin({
-        name: data.name,
-        email: data.email,
-        phone: data.phone || "",
-        gender: data.gender || "",
-        avatar: data.avatar?.url || "",
-        address: data.address ? {
-          addressLine: data.address.addressLine || "",
-          city: data.address.city || "",
-          state: data.address.state || "",
-          country: data.address.country || "",
-          pincode: data.address.pincode || "",
-        } : {
-          addressLine: "",
-          city: "",
-          state: "",
-          country: "",
-          pincode: "",
-        }
-      });
-    } catch (err) {
-      console.error(err.message);
-    }
-  };
-
   useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/admin/me", {
+          headers: getAuthHeader(),
+        });
+
+        const data = res.data;
+        setUserId(data._id);
+        setUserInfo({
+          name: data.fullname,
+          email: data.email,
+          phone: data.mobile || "",
+          gender: data.gender || "",
+          avatar: data.avatar || "",
+          address: data.address ? {
+            addressLine: data.address.addressLine || "",
+            city: data.address.city || "",
+            state: data.address.state || "",
+            country: data.address.country || "",
+            pincode: data.address.pincode || "",
+          } : {
+            addressLine: "",
+            city: "",
+            state: "",
+            country: "",
+            pincode: "",
+          }
+        });
+      } catch (err) {
+        console.error("Failed to fetch user data", err);
+      }
+    };
+
     fetchUser();
-  }, [token]);
+  }, []);
 
   const handleChange = (e) => {
-    setadmin({ ...admin, [e.target.name]: e.target.value });
+    setUserInfo({ ...userInfo, [e.target.name]: e.target.value });
   };
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
-    setadmin((prev) => ({
+    setUserInfo((prev) => ({
       ...prev,
       address: {
         ...prev.address,
@@ -87,42 +91,31 @@ function MyAccount() {
   const toggleEdit = async () => {
     if (isEditing) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(admin.email)) {
+      if (!emailRegex.test(userInfo.email)) {
         alert("Please enter a valid email.");
         return;
       }
 
       try {
-        setLoading(true);
-        const res = await fetch("http://localhost:5000/api/admin/update-profile", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+        const res = await axios.patch(
+          `http://localhost:5000/api/admin/update-profile/${userId}`,
+          {
+            fullname: userInfo.name,
+            email: userInfo.email,
+            mobile: userInfo.phone,
+            gender: userInfo.gender,
+            address: userInfo.address,
           },
-          body: JSON.stringify({
-            name: admin.name,
-            email: admin.email,
-            phone: admin.phone,
-            gender: admin.gender,
-            address: admin.address,
-          }),
-        });
+          { headers: getAuthHeader() }
+        );
 
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Failed to update profile");
-        }
-
-        alert("Profile updated successfully!");
-        await fetchUser();
+        alert("✅ Profile updated successfully!");
       } catch (err) {
         console.error("Update failed", err);
-        alert(err.message);
-      } finally {
-        setLoading(false);
+        alert(err.response?.data?.message || "❌ Failed to update profile.");
       }
     }
+
     setIsEditing(!isEditing);
   };
 
@@ -135,27 +128,24 @@ function MyAccount() {
 
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5000/api/admin/upload-avatar", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      const res = await axios.put(
+        "http://localhost:5000/api/admin/upload-avatar",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            ...getAuthHeader(),
+          },
+        }
+      );
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Avatar upload failed");
-      }
-
-      const data = await res.json();
-      setadmin((prev) => ({
+      setUserInfo((prev) => ({
         ...prev,
-        avatar: `${data.avatar.url}?t=${Date.now()}`,
+        avatar: `${res.data.avatar}?t=${Date.now()}`,
       }));
     } catch (err) {
       console.error("Upload failed", err);
-      alert(err.message);
+      alert("❌ Avatar upload failed.");
     } finally {
       setLoading(false);
     }
@@ -163,14 +153,16 @@ function MyAccount() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:5000/api/admin/logout", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.post(
+        "http://localhost:5000/api/admin/logout",
+        {},
+        { headers: getAuthHeader() }
+      );
       setIsLogin(false);
     } catch (err) {
-      console.warn("Logout failed on backend");
+      console.warn("⚠️ Logout failed on backend");
     } finally {
-      localStorage.removeItem("token");
+      localStorage.removeItem("admin");
       navigate("/");
     }
   };
@@ -178,13 +170,12 @@ function MyAccount() {
   return (
     <section className="py-10 w-full flex justify-center">
       <div className="container mx-auto px-4 flex flex-col md:flex-row gap-6 w-full max-w-5xl">
-        {/* Sidebar */}
         <div className="w-full md:w-1/3 bg-white shadow-md rounded-md p-5">
           <div className="flex flex-col items-center border-b pb-4 relative group">
             <div className="w-24 h-24 rounded-full overflow-hidden relative group">
               <img
-                src={admin.avatar || defaultImg}
-                alt="admin Avatar"
+                src={userInfo.avatar || defaultImg}
+                alt="User Avatar"
                 className="w-full h-full object-cover"
               />
               <label className="absolute bottom-0 right-0 bg-white p-1 rounded-full cursor-pointer shadow group-hover:opacity-100 opacity-0 transition-opacity">
@@ -197,9 +188,9 @@ function MyAccount() {
                 />
               </label>
             </div>
-            {loading && <p className="text-sm text-gray-500 mt-2">Loading...</p>}
-            <h2 className="mt-3 text-lg font-semibold">{admin.name}</h2>
-            <p className="text-gray-500">{admin.email}</p>
+            {loading && <p className="text-sm text-gray-500 mt-2">Uploading...</p>}
+            <h2 className="mt-3 text-lg font-semibold">{userInfo.name}</h2>
+            <p className="text-gray-500">{userInfo.email}</p>
           </div>
 
           <nav className="mt-4">
@@ -236,23 +227,20 @@ function MyAccount() {
           </nav>
         </div>
 
-        {/* Main Form */}
         <div className="w-full md:w-2/3 bg-white shadow-md rounded-md p-5">
           <div className="flex justify-between items-center border-b pb-3">
             <h2 className="text-xl font-semibold">My Profile</h2>
-            <button onClick={toggleEdit} disabled={loading} className="text-blue-500 flex items-center gap-2">
+            <button onClick={toggleEdit} className="text-blue-500 flex items-center gap-2">
               <FaEdit /> {isEditing ? "Save" : "Edit"}
             </button>
           </div>
-
-          {/* Form Fields */}
           <div className="mt-4 space-y-4">
             <div>
               <label className="text-gray-600">Name:</label>
               <input
                 type="text"
                 name="name"
-                value={admin.name}
+                value={userInfo.name}
                 onChange={handleChange}
                 disabled={!isEditing}
                 className="w-full p-2 border rounded-md"
@@ -263,7 +251,7 @@ function MyAccount() {
               <input
                 type="email"
                 name="email"
-                value={admin.email}
+                value={userInfo.email}
                 onChange={handleChange}
                 disabled={!isEditing}
                 className="w-full p-2 border rounded-md"
@@ -274,7 +262,7 @@ function MyAccount() {
               <input
                 type="text"
                 name="phone"
-                value={admin.phone}
+                value={userInfo.phone}
                 onChange={handleChange}
                 disabled={!isEditing}
                 className="w-full p-2 border rounded-md"
@@ -284,7 +272,7 @@ function MyAccount() {
               <label className="text-gray-600">Gender:</label>
               <select
                 name="gender"
-                value={admin.gender}
+                value={userInfo.gender}
                 onChange={handleChange}
                 disabled={!isEditing}
                 className="w-full p-2 border rounded-md"
@@ -300,7 +288,7 @@ function MyAccount() {
               <input
                 type="text"
                 name="addressLine"
-                value={admin.address.addressLine}
+                value={userInfo.address.addressLine}
                 onChange={handleAddressChange}
                 disabled={!isEditing}
                 className="w-full p-2 border rounded-md"
@@ -312,7 +300,7 @@ function MyAccount() {
                 <input
                   type="text"
                   name="city"
-                  value={admin.address.city}
+                  value={userInfo.address.city}
                   onChange={handleAddressChange}
                   disabled={!isEditing}
                   className="w-full p-2 border rounded-md"
@@ -323,7 +311,7 @@ function MyAccount() {
                 <input
                   type="text"
                   name="state"
-                  value={admin.address.state}
+                  value={userInfo.address.state}
                   onChange={handleAddressChange}
                   disabled={!isEditing}
                   className="w-full p-2 border rounded-md"
@@ -336,7 +324,7 @@ function MyAccount() {
                 <input
                   type="text"
                   name="country"
-                  value={admin.address.country}
+                  value={userInfo.address.country}
                   onChange={handleAddressChange}
                   disabled={!isEditing}
                   className="w-full p-2 border rounded-md"
@@ -347,7 +335,7 @@ function MyAccount() {
                 <input
                   type="text"
                   name="pincode"
-                  value={admin.address.pincode}
+                  value={userInfo.address.pincode}
                   onChange={handleAddressChange}
                   disabled={!isEditing}
                   className="w-full p-2 border rounded-md"

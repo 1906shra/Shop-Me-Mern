@@ -44,10 +44,12 @@ const productSchema = new mongoose.Schema(
             required: true,
             default: 0,
         },
-        images: [{
-            type: String,
-            required: true,
-        }],
+        images: [
+            {
+                url: String,
+                public_id: String
+            }
+        ],
         location: {
             value: { type: String },
             label: { type: String }

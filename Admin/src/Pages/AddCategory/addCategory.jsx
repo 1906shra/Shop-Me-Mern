@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Upload from "./categoryUpload";
+import { useNavigate } from "react-router-dom";
+
+
 
 const initialCategory = {
   name: "",
@@ -12,8 +15,18 @@ function AddCategory() {
   const [categoryId, setCategoryId] = useState(null);
   const [allCategories, setAllCategories] = useState([]);
   const [error, setError] = useState("");
-
+  
   const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const admin = JSON.parse(localStorage.getItem("admin")); // Adjust based on how you're storing it
+    if (!admin || !admin.token) {
+      navigate("/Login"); // adjust route as per your app structure
+    } else {
+      fetchCategories();
+    }
+  }, []);
 
   const fetchCategories = async () => {
     try {
