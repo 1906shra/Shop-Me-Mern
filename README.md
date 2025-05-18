@@ -15,12 +15,12 @@
 
 | Page | Screenshot |
 |------|------------|
-| 🏠 Home Page | ![Home](./screenshots/home.png) |
+| 🏠 Home Page  |
 ![alt text](<Screenshot 2025-05-18 195348.png>)
 
-| 🔍 Product Details | ![Product](./screenshots/product-details.png) |
+| 🔍 Product Details |
 ![alt text](<Screenshot 2025-05-18 195431.png>)
-| 🛒 Cart | ![Cart](./screenshots/cart.png) |
+| 🛒 Cart |  |
 ![alt text](<Screenshot 2025-05-18 195452.png>)
 | 👤 My Account | ![Account](./screenshots/account.png) |
 ![alt text](<Screenshot 2025-05-18 195512.png>)
