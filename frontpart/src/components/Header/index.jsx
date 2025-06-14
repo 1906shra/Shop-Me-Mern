@@ -1,5 +1,5 @@
-import React, { useContext, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useContext, useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import myImage from "../../assets/logo.png";
 import Search from "../Search";
 import Badge from "@mui/material/Badge";
@@ -14,8 +14,16 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Divider from "@mui/material/Divider";
 import ListItemIcon from "@mui/material/ListItemIcon";
-import { Person, ShoppingCart, Favorite, LocalOffer, CardGiftcard, Logout } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import {
+  Person,
+  ShoppingCart,
+  Favorite,
+  LocalOffer,
+  CardGiftcard,
+  Logout,
+} from "@mui/icons-material";
+import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 
 // Styled Badge Component
 const StyledBadge = styled(Badge)(({ theme }) => ({
@@ -33,37 +41,75 @@ function Header() {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-
   const context = useContext(AuthContext);
-  const handleLogout = async () => {
-    try {
-      await axios.post(
-        "http://localhost:5000/api/user/logout",
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+
+  const handleClick = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
+
+  const token = localStorage.getItem("token");
+
+  // Automatically validate token and update login state
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        if (decoded.exp * 1000 > Date.now()) {
+          context.setIsLogin(true);
+        } else {
+          context.setIsLogin(false);
+          localStorage.removeItem("token");
         }
-      );
+      } catch (err) {
+        context.setIsLogin(false);
+        localStorage.removeItem("token");
+      }
+    } else {
+      context.setIsLogin(false);
+    }
+  }, [token]);
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("No token found, you are already logged out.");
+      setIsLogin(false);
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:5000/api/admin/logout", {
+        method: "GET", // matches backend route
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+
+      console.log("Logout response:", data);
+
+      if (!res.ok) {
+        throw new Error(data.message || "Logout failed");
+      }
+
+      alert("Logged out successfully!");
     } catch (err) {
-      console.warn("Logout failed on backend");
+      console.warn("Logout failed on backend:", err.message);
+      alert(`Logout failed: ${err.message}`);
     } finally {
       localStorage.removeItem("token");
-      context.setIsLogin(false); // Update login state
-      navigate("/");
+      localStorage.removeItem("adminInfo"); // if you store admin info
+      setIsLogin(false);
+      navigate("/login");
     }
-  }
-
+  };
   return (
     <header className="w-full">
       {/* Top Strip */}
@@ -102,7 +148,7 @@ function Header() {
 
           {/* User Actions */}
           <div className="flex items-center space-x-2">
-            {context?.isLogin === false ? (
+            {!context?.isLogin ? (
               <div className="flex gap-2 text-sm font-medium">
                 <Link to="/Login" className="hover:text-[#FF3D3D]">Login</Link> /
                 <Link to="/SignUp" className="hover:text-[#FF3D3D]">SignUp</Link>
@@ -114,58 +160,55 @@ function Header() {
                     <FaRegCircleUser className="text-xl hover:text-[#FF3D3D]" />
                   </IconButton>
 
-                  {/* Menu */}
+                  {/* Profile Menu */}
                   <Menu
                     anchorEl={anchorEl}
                     open={open}
                     onClose={handleClose}
                     PaperProps={{
-                      className: "absolute left-0 mt-2 w-48 rounded-lg shadow-lg bg-white z-50",
+                      style: {
+                        width: 200, // or use Tailwind width like className: "w-48"
+                      },
                     }}
-                    transformOrigin={{ horizontal: "center", vertical: "top" }}
-                    anchorOrigin={{ horizontal: "center", vertical: "bottom" }}
+                    anchorOrigin={{
+                      vertical: "bottom",
+                      horizontal: "right",
+                    }}
+                    transformOrigin={{
+                      vertical: "top",
+                      horizontal: "right",
+                    }}
                   >
+
                     <Link to={"/MyAccount"}>
-                      <MenuItem sx={{ justifyContent: "flex-start" }}>
-                        <ListItemIcon>
-                          <Person fontSize="small" />
-                        </ListItemIcon>
+                      <MenuItem>
+                        <ListItemIcon><Person fontSize="small" /></ListItemIcon>
                         My Account
                       </MenuItem>
                     </Link>
                     <Link to={'/Order'}>
-                      <MenuItem sx={{ justifyContent: "flex-start" }}>
-                        <ListItemIcon>
-                          <ShoppingCart fontSize="small" />
-                        </ListItemIcon>
+                      <MenuItem>
+                        <ListItemIcon><ShoppingCart fontSize="small" /></ListItemIcon>
                         Orders
                       </MenuItem>
                     </Link>
                     <Link to={"/WishList"}>
-                      <MenuItem sx={{ justifyContent: "flex-start" }}>
-                        <ListItemIcon>
-                          <Favorite fontSize="small" />
-                        </ListItemIcon>
+                      <MenuItem>
+                        <ListItemIcon><Favorite fontSize="small" /></ListItemIcon>
                         Wishlist
                       </MenuItem>
                     </Link>
-                    <MenuItem sx={{ justifyContent: "flex-start" }}>
-                      <ListItemIcon>
-                        <LocalOffer fontSize="small" />
-                      </ListItemIcon>
+                    <MenuItem>
+                      <ListItemIcon><LocalOffer fontSize="small" /></ListItemIcon>
                       Coupons
                     </MenuItem>
-                    <MenuItem sx={{ justifyContent: "flex-start" }}>
-                      <ListItemIcon>
-                        <CardGiftcard fontSize="small" />
-                      </ListItemIcon>
+                    <MenuItem>
+                      <ListItemIcon><CardGiftcard fontSize="small" /></ListItemIcon>
                       Gift Card
                     </MenuItem>
                     <Divider />
-                    <MenuItem onClick={handleLogout} sx={{ justifyContent: "flex-start" }}>
-                      <ListItemIcon>
-                        <Logout fontSize="small" />
-                      </ListItemIcon>
+                    <MenuItem onClick={handleLogout}>
+                      <ListItemIcon><Logout fontSize="small" /></ListItemIcon>
                       Logout
                     </MenuItem>
                   </Menu>
@@ -173,6 +216,7 @@ function Header() {
               </>
             )}
 
+            {/* Cart Icon */}
             <Link to="/cart">
               <IconButton aria-label="cart">
                 <StyledBadge badgeContent={0}>
@@ -181,6 +225,7 @@ function Header() {
               </IconButton>
             </Link>
 
+            {/* Wishlist Icon */}
             <Link to={"/WishList"}>
               <IconButton aria-label="wishlist">
                 <StyledBadge badgeContent={0}>

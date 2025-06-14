@@ -12,6 +12,7 @@ import NewArrival from "../../components/NewArrival/NewArrival";
 
 import HomeSlider2 from "../../components/HomeSlider2/HomeSlider2";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 
 
@@ -34,6 +35,7 @@ const categoryMap = {
   "Mobile":          "6803c6535f1718befe3e8100",
 };
 function Home() {
+  const Navigate = useNavigate();
   const calculateTimeLeft = () => {
     const offerEndTime = new Date().setHours(new Date().getHours() + 5, 0, 0); // Offer ends in 5 hours
     const now = new Date().getTime();
@@ -173,30 +175,37 @@ return (
 
           {/* Right Section - Tab Menu */}
           <div className="w-[1200px] px-4">
-      <Box sx={{ maxWidth: { xs: 320, sm: 480 }, bgcolor: "background.paper" }}>
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            "& .MuiTabs-indicator": {
-              backgroundColor: "#FF3D3D",
-            },
-          }}
-        >
-          {categoryLabels.map((label, index) => (
-            <Tab
-              key={index}
-              label={label}
-              sx={{
-                color: value === index ? "#FF3D3D" : "#4B5563",
-                fontWeight: value === index ? "bold" : "normal",
-              }}
-            />
-          ))}
-        </Tabs>
-      </Box>
+     <div className="w-[1200px] px-4">
+  <div className="flex items-center justify-between">
+    <Box sx={{ maxWidth: { xs: 320, sm: 480 }, bgcolor: "background.paper", flexGrow: 1 }}>
+      <Tabs
+        value={value}
+        onChange={handleChange}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{
+          "& .MuiTabs-indicator": {
+            backgroundColor: "#FF3D3D",
+          },
+        }}
+      >
+        {categoryLabels.map((label, index) => (
+          <Tab
+            key={index}
+            label={label}
+            sx={{
+              color: value === index ? "#FF3D3D" : "#4B5563",
+              fontWeight: value === index ? "bold" : "normal",
+            }}
+          />
+        ))}
+      </Tabs>
+    </Box>
+    <button className="ml-4 px-4 py-2 text-white bg-red-500 rounded-[8px] hover:bg-red-600 transition" onClick={()=>Navigate("ProductListing")}>
+      View All
+    </button>
+  </div>
+</div>
 
       <ProductSlider products={products} items={5} />
     </div>

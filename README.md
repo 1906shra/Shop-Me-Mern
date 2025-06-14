@@ -18,13 +18,36 @@
 | 🏠 Home Page  |
 ![alt text](<Screenshot 2025-05-18 195348.png>)
 
+##
+##
+
+##
+
 | 🔍 Product Details |
 ![alt text](<Screenshot 2025-05-18 195431.png>)
 | 🛒 Cart |  |
+
+
+##
+##
+
+##
 ![alt text](<Screenshot 2025-05-18 195452.png>)
-| 👤 My Account | ![Account](./screenshots/account.png) |
+
+
+##
+##
+
+##
+| 👤 My Account |
 ![alt text](<Screenshot 2025-05-18 195512.png>)
-| 🛠️ Admin Dashboard | ![Admin](./screenshots/admin-dashboard.png) |
+| 🛠️ Admin Dashboard |  |
+
+
+##
+##
+
+##
 ![alt text](<Screenshot 2025-05-18 195555.png>)
 
 ---

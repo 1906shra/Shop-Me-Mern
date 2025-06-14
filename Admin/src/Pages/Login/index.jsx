@@ -1,77 +1,79 @@
-import React, { useState, useEffect, useContext } from "react";
-import { Eye, EyeOff } from "lucide-react";
-import { FcGoogle } from "react-icons/fc";
-import { postData } from "/src/utils/api.js";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../../App";
+import { Eye, EyeOff } from "lucide-react";
+import axios from "axios";
 
-function Login() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [formData, setFormData] = useState({ email: "", password: "" });
+const Login = () => {
   const navigate = useNavigate();
-  const { setIsLogin } = useContext(AuthContext);
+  const { setIsLogin, setUserInfo } = useContext(AuthContext);
+  const [showPassword, setShowPassword] = useState(false);
 
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState("");
+
+  // Load email from localStorage on mount
   useEffect(() => {
-    const savedRememberMe = localStorage.getItem("rememberMe") === "true";
-    setRememberMe(savedRememberMe);
-    if (savedRememberMe) {
-      const savedEmail = localStorage.getItem("email");
-      if (savedEmail) setFormData((prev) => ({ ...prev, email: savedEmail }));
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      setFormData((prev) => ({ ...prev, email: savedEmail }));
+      setRememberMe(true);
     }
   }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleCheckboxChange = () => {
-    const newRememberMe = !rememberMe;
-    setRememberMe(newRememberMe);
-    localStorage.setItem("rememberMe", newRememberMe);
-    if (!newRememberMe) localStorage.removeItem("email");
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      const response = await postData("/admin/login", formData);
+      const res = await axios.post("http://localhost:5000/api/admin/login", formData);
+      const { token, admin } = res.data;
 
-      if (response?.token) {
-        // Save email if rememberMe is checked
-        if (rememberMe) localStorage.setItem("email", formData.email);
-        localStorage.setItem("rememberMe", rememberMe);
+      localStorage.setItem("token", token);
+      localStorage.setItem("adminInfo", JSON.stringify(admin));
 
-        // Save admin info and token together
-        const adminData = {
-          token: response.token,
-          user: response.admin, // or response.user based on backend response
-        };
-        localStorage.setItem("admin", JSON.stringify(adminData));
-
-        // Update context login state
-        setIsLogin(true);
-
-        // Show success alert and navigate after slight delay
-        alert("✅ Login successful!");
-        setTimeout(() => navigate("/"), 100); // Delay to allow state changes
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", formData.email);
       } else {
-        alert(response.message || "Login failed.");
+        localStorage.removeItem("rememberedEmail");
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("❌ Something went wrong. Please try again.");
+
+      setIsLogin(true);
+      setUserInfo(admin);
+
+      setTimeout(() => {
+        navigate("/");
+      }, 100);
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed. Please try again.");
     }
   };
 
-  return (
-    <section className="flex justify-center items-center min-h-screen bg-gradient-to-r from-pink-100 to-red-100">
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg space-y-6">
-        <h2 className="text-3xl font-bold text-center text-gray-800">Welcome Back</h2>
-        <p className="text-center text-gray-600">Please login to your account</p>
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:5000/api/admin/google";
+  };
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-pink-100 to-red-100">
+      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg space-y-6">
+        <h2 className="text-3xl font-bold text-center text-gray-800">
+          Admin Login
+        </h2>
+
+        {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-gray-700 font-medium">Email</label>
             <input
@@ -79,45 +81,49 @@ function Login() {
               name="email"
               value={formData.email}
               onChange={handleChange}
+              required
               className="w-full px-4 py-2 border rounded-lg"
-              required
+              placeholder="Enter your email"
             />
           </div>
 
-          <div className="relative">
+          <div>
             <label className="block text-gray-700 font-medium">Password</label>
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg pr-10"
-              required
-            />
-            <button
-              type="button"
-              className="absolute top-9 right-3 text-gray-500"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border rounded-lg pr-10"
+                placeholder="Enter your password"
+              />
+              <div
+                className="absolute inset-y-0 right-3 flex items-center cursor-pointer text-gray-500"
+                onClick={() => setShowPassword((prev) => !prev)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </div>
+            </div>
           </div>
 
-          <div className="flex justify-between text-sm">
-            <label className="flex items-center space-x-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
               <input
                 type="checkbox"
+                id="rememberMe"
                 checked={rememberMe}
-                onChange={handleCheckboxChange}
+                onChange={() => setRememberMe((prev) => !prev)}
+                className="mr-2"
               />
-              <span>Remember me</span>
-            </label>
-            <Link
-              to="/verify"
-              state={{ email: formData.email }}
-              className="text-[#f56666] hover:underline"
-            >
-              Forgot password?
+              <label htmlFor="rememberMe" className="text-sm text-gray-700">
+                Remember Me
+              </label>
+            </div>
+
+            <Link to="/Verify" className="text-sm text-blue-600 hover:underline">
+              Forgot Password?
             </Link>
           </div>
 
@@ -129,26 +135,22 @@ function Login() {
           </button>
         </form>
 
-        <div className="flex items-center justify-center my-4">
-          <div className="w-full border-t border-gray-300"></div>
-          <span className="px-3 text-gray-500">OR</span>
-          <div className="w-full border-t border-gray-300"></div>
-        </div>
+        <div className="my-4 text-center text-gray-500">OR</div>
 
-        <button className="w-full flex items-center justify-center border border-gray-300 py-2 rounded-lg hover:bg-gray-100">
-          <FcGoogle size={24} className="mr-2" />
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full flex items-center justify-center bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-2 px-4 rounded transition duration-200"
+        >
+          <img
+            src="https://www.svgrepo.com/show/475656/google-color.svg"
+            alt="Google"
+            className="w-5 h-5 mr-2"
+          />
           Continue with Google
         </button>
-
-        <p className="text-center text-gray-600">
-          Don’t have an account?{" "}
-          <Link to="/signup" className="text-[#f56666] hover:underline">
-            Sign up
-          </Link>
-        </p>
       </div>
-    </section>
+    </div>
   );
-}
+};
 
 export default Login;

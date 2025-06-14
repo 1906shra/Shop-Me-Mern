@@ -31,32 +31,46 @@ function Header() {
   const goToLogin = () => navigate("/login");
   const goToRegister = () => navigate("/signup");
 
-  const handleLogout = async () => {
-    const token = localStorage.getItem("token");
+ const handleLogout = async () => {
+  const token = localStorage.getItem("token");
 
+  if (!token) {
+    alert("No token found, you are already logged out.");
+    setIsLogin(false);
+    navigate("/login");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:5000/api/admin/logout", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,  // important: "Bearer " + token
+      },
+    });
+
+    let data;
     try {
-      const res = await fetch("http://localhost:5000/api/admin/logout", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Logout failed");
-      }
-
-      alert("Logged out successfully!");
-    } catch (err) {
-      console.warn("Logout failed on backend:", err.message);
-    } finally {
-      localStorage.removeItem("token");
-     // localStorage.removeItem("adminInfo");
-      setIsLogin(false);
-      navigate("/login");
+      data = await res.json();
+    } catch {
+      data = {};
     }
-  };
+
+    if (!res.ok) {
+      throw new Error(data.message || "Logout failed");
+    }
+
+    alert("Logged out successfully!");
+  } catch (err) {
+    console.warn("Logout failed on backend:", err.message);
+    alert(`Logout failed: ${err.message}`);
+  } finally {
+    localStorage.removeItem("token");
+    localStorage.removeItem("adminInfo");
+    setIsLogin(false);
+    navigate("/login");
+  }
+};
 
   return (
     <header className="w-full h-20 bg-white shadow-md flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50">
@@ -64,7 +78,7 @@ function Header() {
       <div className="flex items-center gap-4">
         <img src={img1} alt="Logo" className="w-full h-16 object-contain" />
         <IconButton className="p-0 w-auto h-auto" size="small">
-          <RiMenuFold2Fill className="text-[24px] text-gray-700 hover:text-[#FF3D3D]" />
+          <RiMenuFold2Fill className="text-[24px] text-gray-700 hover:text-[#FF3D3D]" onClick={()=>navigate('/')} />
         </IconButton>
       </div>
 

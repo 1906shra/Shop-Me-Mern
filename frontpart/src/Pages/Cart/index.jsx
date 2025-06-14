@@ -126,7 +126,7 @@ function Cart() {
                     </div>
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold">
-                        <Link to={`/product/${product._id}`} className="text-blue-500 hover:underline">
+                        <Link to={`/product/${product._id}`} className="text-gray-800 hover:underline">
                           {product.name}
                         </Link>
                       </h3>
@@ -140,7 +140,13 @@ function Cart() {
                         <span className="px-4 py-1 bg-white border">{item.quantity}</span>
                         <button onClick={() => updateQuantity(item._id, 1)} className="px-3 py-1 bg-gray-300 rounded-r-md">+</button>
                       </div>
-                      <button onClick={() => handleRemoveClick(item)} className="mt-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">Remove</button>
+                    <button
+  onClick={() => handleRemoveClick(item)}
+  className="mt-2 px-4 py-2 rounded-md bg-red-500 text-white font-medium shadow-sm hover:bg-red-600 transition duration-200 ease-in-out active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-400"
+>
+  Remove
+</button>
+
                     </div>
                   </div>
                 );
@@ -182,17 +188,31 @@ function Cart() {
       </div>
 
       {/* Remove confirmation popup */}
-      {showPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg text-center">
-            <p className="mb-4">Are you sure you want to remove this item?</p>
+  {showPopup && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl w-[90%] max-w-md text-center animate-fadeIn">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Confirm Deletion</h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to remove this item? This action cannot be undone.
+            </p>
             <div className="flex justify-center gap-4">
-              <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={confirmRemove}>Yes</button>
-              <button className="bg-gray-300 px-4 py-2 rounded" onClick={() => setShowPopup(false)}>Cancel</button>
+              <button
+                onClick={confirmRemove}
+                className="px-5 py-2.5 rounded-full bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white font-semibold shadow-md hover:from-red-600 hover:to-red-800 transform hover:scale-105 transition duration-300"
+              >
+                Yes, Remove
+              </button>
+              <button
+                onClick={() => setShowPopup(false)}
+                className="px-5 py-2.5 rounded-full bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transform hover:scale-105 transition duration-300"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
+
     </section>
   );
 }

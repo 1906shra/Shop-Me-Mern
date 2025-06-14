@@ -22,7 +22,7 @@ const router = express.Router();
 
 router.post('/register', registerAdmin);
 router.post('/login', loginAdmin);
-router.get('/logout', adminAuth, logoutAdmin);
+router.get('/logout', logoutAdmin);
 
 router.get('/verify/:token', verifyAdminEmail);
 router.post('/verify/:token', verifyAdminEmail);

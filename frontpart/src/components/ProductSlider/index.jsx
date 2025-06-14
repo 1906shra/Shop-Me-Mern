@@ -30,6 +30,8 @@ function ProductSlider({ items = 4, products = [] }) {
         <ArrowRight size={24} />
       </button>
 
+      
+
       <Swiper
         slidesPerView={items}
         spaceBetween={10}

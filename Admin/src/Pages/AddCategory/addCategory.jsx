@@ -20,13 +20,16 @@ function AddCategory() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const admin = JSON.parse(localStorage.getItem("admin")); // Adjust based on how you're storing it
-    if (!admin || !admin.token) {
-      navigate("/Login"); // adjust route as per your app structure
-    } else {
-      fetchCategories();
-    }
-  }, []);
+  const admin = JSON.parse(localStorage.getItem("adminInfo"));
+  const token = localStorage.getItem("token"); // ✅ check stored token
+
+  if (!admin || !token) {
+    navigate("/Login");
+  } else {
+    fetchCategories();
+  }
+}, []);
+
 
   const fetchCategories = async () => {
     try {

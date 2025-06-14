@@ -37,6 +37,7 @@ function HomeCatSlider() {
   return (
     <div className="relative w-full max-w-[1400px] mx-auto p-5">
       {/* Left Navigation Button */}
+     
       <button
         onClick={() => swiperRef.current?.slidePrev()}
         className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 p-3 bg-black text-white rounded-full shadow-lg"

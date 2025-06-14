@@ -31,6 +31,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import Slide from "@mui/material/Slide";
 import AdminCategoryManager from "./Pages/categoryList";
 import ProductList from "./Pages/productList/productlist";
+import ProductUploader from "./Pages/Products/addProducts";
 
 // Create Contexts
 const DialogContext = createContext();
@@ -171,6 +172,7 @@ function AppContent() {
             <Route path="/subcategory" element={<SubCategory />} />
             <Route path="/users" element={<Users />} />
             <Route path="/forgotpassword" element={<ForgotPassword />} />
+            <Route path="/productUpload" element={<ProductUploader/>} />
             <Route path="/admin/verify/:token" element={<VerifyEmail />} />
             <Route path="/verify" element={<Verify />} />
             <Route path="/myaccount" element={<MyAccount />} />

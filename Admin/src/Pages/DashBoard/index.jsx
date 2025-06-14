@@ -1,4 +1,4 @@
-import React ,{useContext}from "react";
+import React ,{useContext,useEffect}from "react";
 import DashCom from "../../Components/DashCom";
 import img1 from "../../assets/onlineshop.png";
 import Button from "@mui/material/Button";
@@ -10,7 +10,8 @@ import {
   import { DialogContext } from "../../App";
   import AddProducts from "../Products/addProducts";
 
-const itemsPerPage = 2;
+const itemsPerPage = 4;
+import axios from "axios";
 
 const userSalesData = [
   { name: "Jan", totalUsers: 480, totalSales: 11500 },
@@ -23,9 +24,6 @@ const userSalesData = [
 ];
 
 function DashBoard() {
-  const { openDialog } = useContext(DialogContext);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const userSalesData1 = [
     { name: "Jan", totalUsers: 480, totalSales: 11500 },
     { name: "Feb", totalUsers: 720, totalSales: 15200 },
@@ -35,29 +33,60 @@ function DashBoard() {
     { name: "Jun", totalUsers: 1350, totalSales: 27000 },
     { name: "Jul", totalUsers: 1750, totalSales: 31000 },
   ];
-  
- 
-  
-  const products = [
-    { 
-      id: "501", image: "/images/iphone15.jpg", brand: "Apple", name: "iPhone 15", color: "Black", category: "Electronics", subcategory: "Smartphones", stock: "In Stock", price: "$999", date: "2025-03-10", rating: 4.8, reviews: 1200, description: "Latest Apple smartphone with A16 Bionic chip and 48MP camera." 
-    },
-    { 
-      id: "502", image: "/images/dell-xps15.jpg", brand: "Dell", name: "XPS 15", color: "Silver", category: "Computers", subcategory: "Laptops", stock: "Out of Stock", price: "$1499", date: "2025-02-25", rating: 4.6, reviews: 890, description: "High-performance laptop with Intel i9 and 4K OLED display." 
-    },
-    { 
-      id: "503", image: "/images/sony-headphones.jpg", brand: "Sony", name: "WH-1000XM5", color: "Blue", category: "Accessories", subcategory: "Headphones", stock: "Low Stock", price: "$399", date: "2025-03-05", rating: 4.7, reviews: 2100, description: "Premium noise-canceling wireless headphones with 30-hour battery." 
-    },
-    { 
-      id: "504", image: "/images/galaxy-watch6.jpg", brand: "Samsung", name: "Galaxy Watch 6", color: "Black", category: "Wearables", subcategory: "Smartwatches", stock: "In Stock", price: "$349", date: "2025-02-28", rating: 4.5, reviews: 750, description: "Advanced fitness smartwatch with ECG and sleep tracking." 
-    },
-  ];
+   const { openDialog } = useContext(DialogContext);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
+useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/products/get", {
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      });
 
-  const totalPages = Math.ceil(products.length / itemsPerPage);
+      if (res.status === 200 && res.data) {
+        setProducts(res.data); // ✅ FIXED: res.data instead of res.data.products
+      } else if (res.status === 304) {
+        console.log("Data not modified, using previous state.");
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError("Failed to fetch products.");
+      setLoading(false);
+    }
+  };
+
+  fetchProducts();
+}, []);
+
+  const getCategoryLabel = (cat) => {
+    if (!cat) return "Unknown";
+    if (typeof cat === "object" && cat.name) return cat.name;
+    return String(cat); // fallback for ObjectId string
+  };
+
+  const filteredProducts =
+    selectedCategory === "All"
+      ? products
+      : products.filter((p) => getCategoryLabel(p.category) === selectedCategory);
+
+  const categories = ["All", ...new Set(products.map((p) => getCategoryLabel(p.category)))];
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentProducts = products.slice(startIndex, startIndex + itemsPerPage);
-  const categories = ['All', 'Electronics', 'Computers', 'Accessories', 'Wearables'];
+  const currentProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+
+  if (loading) return <div className="ml-[300px] text-xl font-semibold">Loading products...</div>;
+  if (error) return <div className="ml-[300px] text-red-600 font-semibold">{error}</div>;
+
+  
   return (
     <>
 <div className="w-510px p-5 border border-gray-700 flex items-center justify-center mb-5 ml-[300px] mr-4">
@@ -105,67 +134,127 @@ function DashBoard() {
 
 
 
-      <div className="card my-3 p-4 bg-white shadow-lg rounded-lg  ml-[300px] mr-4">
+<div className="card my-3 p-4 bg-white shadow-lg rounded-lg ml-[300px] mr-4">
       <div className="flex items-center justify-between mb-4">
         <div className="text-lg font-semibold text-gray-700">Product Management</div>
         <div className="flex space-x-4">
-          <select className="p-2 border rounded" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
+          <select
+            className="p-2 border rounded"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
             ))}
           </select>
           <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Export</button>
-          <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600" onClick={() => openDialog(<AddProducts />, "Add New Product")}>Add Product</button>
+          <button
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            onClick={() => openDialog(<AddProducts />, "Add New Product")}
+          >
+            Add Product
+          </button>
         </div>
       </div>
+
       <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
           <thead className="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
             <tr>
-              <th className="px-4 py-3"><input type="checkbox" className="w-4 h-4 text-blue-600" /></th>
+              <th className="px-4 py-3">
+                <input type="checkbox" className="w-4 h-4 text-blue-600" />
+              </th>
               <th className="px-6 py-3">Product Details</th>
               <th className="px-6 py-3">Category</th>
-              <th className="px-6 py-3">Subcategory</th>
-              <th className="px-6 py-3">Stock Status</th>
+              <th className="px-6 py-3">Stock</th>
               <th className="px-6 py-3">Price</th>
-              <th className="px-6 py-3">Added Date</th>
               <th className="px-6 py-3 text-center">Action</th>
             </tr>
           </thead>
           <tbody>
             {currentProducts.map((product) => (
-              <tr key={product.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                <td className="px-4 py-4"><input type="checkbox" className="w-4 h-4 text-blue-600" /></td>
+              <tr key={product._id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                <td className="px-4 py-4">
+                  <input type="checkbox" className="w-4 h-4 text-blue-600" />
+                </td>
                 <td className="px-6 py-4 flex items-center space-x-4">
-                  <img src={product.image} alt={product.name} className="w-16 h-16 rounded-md object-cover" />
+                  <img
+                    src={product.images?.[0]?.url || "/placeholder.jpg"}
+                    alt={product.name}
+                    className="w-16 h-16 rounded-md object-cover"
+                  />
                   <div>
-                    <a href={`/product/${product.id}`} className="text-lg font-semibold text-gray-800 hover:text-blue-500">{product.name}</a>
-                    <p className="text-sm text-gray-500">ID: {product.id} • {product.brand}</p>
-                    <p className="text-sm text-gray-600">Color: {product.color} • ⭐ {product.rating} ({product.reviews} reviews)</p>
-                    <p className="text-xs text-gray-500">{product.description}</p>
+                    <a
+                      href={`/product/${product._id}`}
+                      className="text-lg font-semibold text-gray-800 hover:text-red-500"
+                    >
+                      {product.name}
+                    </a>
+                    <p className="text-sm text-gray-500">
+                      ID: {product._id} • {product.brand}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      ⭐ {product.ratings} ({product.reviews?.length || 0} reviews)
+                    </p>
                   </div>
                 </td>
-                <td className="px-6 py-4">{product.category}</td>
-                <td className="px-6 py-4">{product.subcategory}</td>
-                <td className={`px-6 py-4 ${product.stock === "In Stock" ? "text-green-500" : product.stock === "Low Stock" ? "text-yellow-500" : "text-red-500"}`}>{product.stock}</td>
-                <td className="px-6 py-4">{product.price}</td>
-                <td className="px-6 py-4">{product.date}</td>
+                <td className="px-6 py-4">{getCategoryLabel(product.category)}</td>
+                <td
+                  className={`px-6 py-4 ${
+                    product.stock > 5
+                      ? "text-green-500"
+                      : product.stock > 0
+                      ? "text-yellow-500"
+                      : "text-red-500"
+                  }`}
+                >
+                  {product.stock > 5
+                    ? "In Stock"
+                    : product.stock > 0
+                    ? "Low Stock"
+                    : "Out of Stock"}
+                </td>
+                <td className="px-6 py-4">₹{product.price}</td>
                 <td className="px-6 py-4 text-center flex justify-center space-x-4">
-                  <button className="text-green-500 hover:text-green-700" title="View Details"><FaEye size={18} /></button>
-                  <button className="text-blue-500 hover:text-blue-700" title="Edit"><FaEdit size={18} /></button>
-                  <button className="text-red-500 hover:text-red-700" title="Delete"><FaTrash size={18} /></button>
+                  <button className="text-green-500 hover:text-green-700" title="View Details">
+                    <FaEye size={18} />
+                  </button>
+                  <button className="text-blue-500 hover:text-blue-700" title="Edit">
+                    <FaEdit size={18} />
+                  </button>
+                  <button className="text-red-500 hover:text-red-700" title="Delete">
+                    <FaTrash size={18} />
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
         <div className="flex justify-center mt-4 space-x-2">
-          <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Previous</button>
-          <span className="px-3 py-1">Page {currentPage} of {totalPages}</span>
-          <button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Next</button>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="px-3 py-1">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>
+
 
 
   
